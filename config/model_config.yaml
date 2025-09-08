@@ -1,0 +1,87 @@
+# Advanced Deep Learning Spam Detection Configuration
+model_config:
+  # Transformer Model Configuration
+  transformer:
+    model_name: "microsoft/DialoGPT-medium"  # Can be changed to roberta-base, bert-base-uncased
+    max_length: 512
+    num_labels: 2
+    learning_rate: 2e-5
+    batch_size: 16
+    num_epochs: 5
+    warmup_steps: 500
+    weight_decay: 0.01
+    gradient_accumulation_steps: 2
+    mixed_precision: true
+    
+  # CNN-LSTM Model Configuration  
+  cnn_lstm:
+    vocab_size: 50000
+    embedding_dim: 300
+    cnn_filters: [64, 128, 256]
+    kernel_sizes: [3, 4, 5]
+    lstm_hidden_size: 128
+    lstm_layers: 2
+    dropout: 0.3
+    learning_rate: 1e-3
+    batch_size: 32
+    num_epochs: 10
+    
+  # Graph Neural Network Configuration
+  gnn:
+    node_features: 768
+    hidden_channels: 256
+    num_layers: 3
+    dropout: 0.2
+    learning_rate: 1e-3
+    batch_size: 64
+    num_epochs: 15
+    aggregation: "mean"
+    
+# Training Configuration
+training:
+  device: "cuda"  # auto-detect GPU/CPU
+  mixed_precision: true
+  gradient_checkpointing: true
+  data_parallel: true
+  save_top_k: 3
+  patience: 5
+  min_delta: 0.001
+  
+# Data Configuration
+data:
+  train_split: 0.8
+  val_split: 0.1
+  test_split: 0.1
+  random_seed: 42
+  max_samples_per_class: 100000
+  
+# Ensemble Configuration
+ensemble:
+  weights:
+    transformer: 0.5
+    cnn_lstm: 0.3
+    gnn: 0.2
+  confidence_threshold: 0.7
+  uncertainty_samples: 100
+  
+# LLM Validation Configuration
+llm_validation:
+  provider: "openai"  # or "anthropic"
+  model: "gpt-4"
+  max_tokens: 1000
+  temperature: 0.1
+  confidence_threshold: 0.6
+  
+# Performance Optimization
+optimization:
+  quantization: true
+  tensorrt: false
+  batch_inference: true
+  cache_predictions: true
+  
+# Monitoring
+monitoring:
+  use_mlflow: true
+  use_wandb: false
+  log_level: "INFO"
+  save_artifacts: true

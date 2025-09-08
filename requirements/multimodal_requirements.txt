@@ -1,0 +1,41 @@
+# Multi-Modal Input Processing Dependencies
+
+# File Upload & Processing
+Pillow>=10.0.0                    # Image processing
+PyPDF2>=3.0.1                    # PDF processing
+python-docx>=0.8.11              # DOCX processing
+python-magic>=0.4.27             # File type detection
+openpyxl>=3.1.2                  # Excel support
+
+# OCR & Text Extraction
+pytesseract>=0.3.10              # OCR engine
+opencv-python>=4.8.0             # Image preprocessing
+easyocr>=1.7.0                   # Alternative OCR engine
+
+# Speech Processing
+SpeechRecognition>=3.10.0        # Speech-to-text
+pydub>=0.25.1                    # Audio processing
+librosa>=0.10.1                  # Audio analysis
+
+# QR Code Processing
+qrcode>=7.4.2                    # QR code generation
+pyzbar>=0.1.9                    # QR code reading
+
+# URL & Web Processing
+selenium>=4.15.0                 # Web automation for screenshots
+webdriver-manager>=4.0.1         # WebDriver management
+pyautogui>=0.9.54               # Screenshot utilities
+
+# Security & Validation
+python-magic-bin>=0.4.14        # File type validation (Windows)
+clamdav>=0.1.1                  # Malware scanning (optional)
+
+# Progress & Async Processing
+celery>=5.3.0                   # Background task processing
+redis>=5.0.0                    # Message broker
+django-celery-beat>=2.5.0       # Periodic tasks
+django-celery-results>=2.5.1    # Task results
+
+# Storage & Media
+django-storages>=1.14.0         # Cloud storage support
+boto3>=1.29.0                   # AWS S3 support
