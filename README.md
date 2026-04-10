@@ -9,6 +9,48 @@ A state-of-the-art cybersecurity platform that integrates **Hybrid Deep Learning
 
 ---
 
+## 🚀 Beginner's Quick Start
+
+**If you are new to this project, follow these 4 steps to get up and running immediately.**
+
+### 1. Clone the Laboratory
+Copy the project files to your local machine:
+```bash
+git clone https://github.com/kim-kimani/Deep-Learning-Based-Phishing-Detection-System
+cd Deep-Learning-Based-Phishing-Detection-System
+```
+
+### 2. Create a Private Environment (Virtual Env)
+Isolate the project dependencies to avoid conflicts with your system:
+```bash
+# Create the environment
+python3 -m venv venv
+
+# Activate it
+source venv/bin/activate  # On Linux/macOS
+# OR
+venv\Scripts\activate     # On Windows
+```
+
+### 3. Install the Essentials
+Install the required tools and libraries:
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Run your first Security Scan
+The easiest way to see the system in action is the automated scanner:
+```bash
+# Give permission (Linux/Mac only)
+chmod +x scanner/emailscan
+
+# Run the scan
+./scanner/emailscan
+```
+*Note: This will start the server and run a self-test automatically!*
+
+---
+
 ## 🔬 Research & Methodology
 
 This project is built on the intersection of **Linguistic Forensics** and **Graph Topology**. Our methodology focuses on identifying "Intent-based Anomalies" rather than just keyword matching.
