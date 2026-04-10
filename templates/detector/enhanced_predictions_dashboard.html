@@ -1,0 +1,786 @@
+{% extends 'detector/base.html' %} {% block title %}Enhanced Predictions
+Dashboard - ML Security Platform{% endblock %} {% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <!-- Dashboard Header -->
+  <div class="text-center mb-8">
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+      Enhanced Predictions Dashboard
+    </h1>
+    <p class="text-lg text-gray-600 dark:text-gray-400 mb-4">
+      Card-based view with filtering and pagination
+    </p>
+    <!-- Email action buttons -->
+    <div class="flex justify-center gap-3 flex-wrap">
+      <button
+        onclick="runEmailScript('fetch')"
+        id="dashFetchBtn"
+        class="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow transition-all text-sm"
+      >
+        📥 Fetch New Emails
+      </button>
+      <button
+        onclick="runEmailScript('deepseek')"
+        id="dashDeepseekBtn"
+        class="inline-flex items-center gap-2 px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg shadow transition-all text-sm"
+      >
+        🤖 Analyze with DeepSeek AI
+      </button>
+      <a
+        href="{% url 'email_dashboard' %}"
+        class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg shadow transition-all text-sm"
+      >
+        📧 Email Dashboard
+      </a>
+    </div>
+    <!-- Log panel -->
+    <div id="dashLogPanel" class="hidden mt-4 text-left">
+      <div class="bg-gray-900 rounded-xl border border-gray-700">
+        <div
+          class="flex items-center justify-between px-4 py-2 border-b border-gray-700"
+        >
+          <span id="dashLogLabel" class="text-gray-300 text-xs font-mono"
+            >Terminal</span
+          >
+          <div class="flex items-center gap-2">
+            <span
+              id="dashLogStatus"
+              class="text-xs px-2 py-0.5 rounded-full bg-gray-700 text-gray-300"
+              >Idle</span
+            >
+            <button
+              onclick="
+                document.getElementById('dashLogPanel').classList.add('hidden')
+              "
+              class="text-gray-500 hover:text-white text-xs"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+        <div
+          id="dashLogOutput"
+          class="font-mono text-xs text-green-400 p-4 max-h-48 overflow-y-auto"
+        >
+          <span class="text-gray-500">Waiting…</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Statistics Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <div class="flex items-center">
+        <div class="p-3 rounded-full bg-blue-100 dark:bg-blue-900">
+          <svg
+            class="w-6 h-6 text-blue-600 dark:text-blue-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+            ></path>
+          </svg>
+        </div>
+        <div class="ml-4">
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+            Total Predictions
+          </p>
+          <p class="text-2xl font-semibold text-gray-900 dark:text-white">
+            {{ total_predictions }}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <div class="flex items-center">
+        <div class="p-3 rounded-full bg-red-100 dark:bg-red-900">
+          <svg
+            class="w-6 h-6 text-red-600 dark:text-red-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+            ></path>
+          </svg>
+        </div>
+        <div class="ml-4">
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+            Malicious Detected
+          </p>
+          <p class="text-2xl font-semibold text-gray-900 dark:text-white">
+            {{ malicious_predictions }}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <div class="flex items-center">
+        <div class="p-3 rounded-full bg-green-100 dark:bg-green-900">
+          <svg
+            class="w-6 h-6 text-green-600 dark:text-green-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+            ></path>
+          </svg>
+        </div>
+        <div class="ml-4">
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+            Safe Detected
+          </p>
+          <p class="text-2xl font-semibold text-gray-900 dark:text-white">
+            {{ safe_predictions }}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <div class="flex items-center">
+        <div class="p-3 rounded-full bg-purple-100 dark:bg-purple-900">
+          <svg
+            class="w-6 h-6 text-purple-600 dark:text-purple-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+            ></path>
+          </svg>
+        </div>
+        <div class="ml-4">
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+            Avg Confidence
+          </p>
+          <p class="text-2xl font-semibold text-gray-900 dark:text-white">
+            {{ avg_confidence|floatformat:1 }}%
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters Section -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow mb-8">
+    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+        Filters
+      </h2>
+    </div>
+    <div class="p-6">
+      <form method="get" class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- Prediction Type Filter -->
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Prediction Type
+            </label>
+            <select
+              name="type"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+            >
+              <option
+                value="all"
+                {%
+                if
+                current_type=""
+                ="all"
+                %}selected{%
+                endif
+                %}
+              >
+                All Types
+              </option>
+              {% for type in prediction_types %}
+              <option
+                value="{{ type }}"
+                {%
+                if
+                current_type=""
+                ="type"
+                %}selected{%
+                endif
+                %}
+              >
+                {{ type|title }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Threat Category Filter -->
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Threat Category
+            </label>
+            <select
+              name="category"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+            >
+              <option
+                value="all"
+                {%
+                if
+                current_category=""
+                ="all"
+                %}selected{%
+                endif
+                %}
+              >
+                All Categories
+              </option>
+              {% for category in threat_categories %}
+              <option
+                value="{{ category.name }}"
+                {%
+                if
+                current_category=""
+                ="category.name"
+                %}selected{%
+                endif
+                %}
+              >
+                {{ category.name }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Risk Level Filter -->
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Risk Level
+            </label>
+            <select
+              name="risk"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+            >
+              <option
+                value="all"
+                {%
+                if
+                current_risk=""
+                ="all"
+                %}selected{%
+                endif
+                %}
+              >
+                All Risk Levels
+              </option>
+              {% for risk in risk_levels %}
+              <option
+                value="{{ risk.name }}"
+                {%
+                if
+                current_risk=""
+                ="risk.name"
+                %}selected{%
+                endif
+                %}
+              >
+                {{ risk.name }} (Level {{ risk.level }})
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Search Filter -->
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Search
+            </label>
+            <input
+              type="text"
+              name="search"
+              value="{{ search_query }}"
+              placeholder="Search content, labels, or domains..."
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+            />
+          </div>
+        </div>
+
+        <div class="flex justify-between items-center">
+          <div class="flex space-x-3">
+            <button
+              type="submit"
+              class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+            >
+              Apply Filters
+            </button>
+            <a
+              href="{% url 'enhanced_predictions_dashboard' %}"
+              class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
+            >
+              Clear Filters
+            </a>
+          </div>
+          <div class="text-sm text-gray-500 dark:text-gray-400">
+            Showing {{ page_obj.start_index }} - {{ page_obj.end_index }} of {{ page_obj.paginator.count }}
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Predictions Cards Grid -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow">
+    <div
+      class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center"
+    >
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+        Enhanced Predictions
+      </h2>
+      <div class="flex items-center space-x-4">
+        <span class="text-sm text-gray-500 dark:text-gray-400">
+          Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+        </span>
+        <select
+          onchange="window.location.href = this.value"
+          class="text-sm border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1 dark:bg-gray-700 dark:text-white"
+        >
+          <option
+            value="?{% for key, value in request.GET.items %}{% if key != 'per_page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}per_page=12"
+            {%
+            if
+            per_page=""
+            ="12"
+            %}selected{%
+            endif
+            %}
+          >
+            12 per page
+          </option>
+          <option
+            value="?{% for key, value in request.GET.items %}{% if key != 'per_page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}per_page=24"
+            {%
+            if
+            per_page=""
+            ="24"
+            %}selected{%
+            endif
+            %}
+          >
+            24 per page
+          </option>
+          <option
+            value="?{% for key, value in request.GET.items %}{% if key != 'per_page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}per_page=48"
+            {%
+            if
+            per_page=""
+            ="48"
+            %}selected{%
+            endif
+            %}
+          >
+            48 per page
+          </option>
+        </select>
+      </div>
+    </div>
+
+    <div class="p-6">
+      {% if predictions %}
+      <!-- Cards Grid -->
+      <div
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8"
+      >
+        {% for prediction in predictions %}
+        <div
+          class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-lg transition-shadow duration-200"
+        >
+          <!-- Card Header -->
+          <div class="flex justify-between items-start mb-3">
+            <div class="flex items-center space-x-2">
+              <span
+                class="px-2 py-1 text-xs font-medium rounded-full {% if prediction.predicted_label in 'PHISHING,SPAM,MALICIOUS' %} bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 {% else %} bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 {% endif %}"
+              >
+                {{ prediction.prediction_type|upper }}
+              </span>
+              <span
+                class="px-2 py-1 text-xs font-medium rounded-full {% if prediction.predicted_label in 'PHISHING,SPAM,MALICIOUS' %} bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 {% else %} bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 {% endif %}"
+              >
+                {{ prediction.predicted_label }}
+              </span>
+            </div>
+            <div class="text-right">
+              <div class="text-sm font-semibold text-gray-900 dark:text-white">
+                {{ prediction.confidence_percentage }}
+              </div>
+              <div
+                class="w-16 bg-gray-200 dark:bg-gray-600 rounded-full h-2 mt-1"
+              >
+                <div
+                  class="bg-blue-500 h-2 rounded-full"
+                  style="width: {{ prediction.confidence_score }}%"
+                ></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card Content -->
+          <div class="mb-4">
+            <p
+              class="text-sm text-gray-600 dark:text-gray-300 mb-2 line-clamp-3"
+            >
+              {{ prediction.input_text|truncatechars:150 }}
+            </p>
+
+            {% if prediction.threat_category %}
+            <div class="flex items-center mb-1">
+              <span class="text-xs text-gray-500 dark:text-gray-400 mr-2"
+                >Category:</span
+              >
+              <span
+                class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+              >
+                {{ prediction.threat_category.name }}
+              </span>
+            </div>
+            {% endif %} {% if prediction.risk_level %}
+            <div class="flex items-center mb-1">
+              <span class="text-xs text-gray-500 dark:text-gray-400 mr-2"
+                >Risk:</span
+              >
+              <span
+                class="px-2 py-1 text-xs font-medium rounded-full"
+                style="background-color: {{ prediction.risk_level.color }}20; color: {{ prediction.risk_level.color }};"
+              >
+                {{ prediction.risk_level.name }}
+              </span>
+            </div>
+            {% endif %}
+
+            <div class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+              {{ prediction.timestamp|date:"M d, Y H:i" }}
+            </div>
+          </div>
+
+          <!-- Card Actions -->
+          <div
+            class="flex justify-between items-center pt-3 border-t border-gray-100 dark:border-gray-700"
+          >
+            <div class="flex flex-wrap gap-2">
+              <a
+                href="{% url 'prediction_detail' prediction.id %}"
+                class="px-3 py-1 text-xs bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200 rounded hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors"
+              >
+                Details
+              </a>
+
+              {% if prediction.has_report %}
+              <a
+                href="{% url 'deepseek_analysis_page' prediction.id %}"
+                class="px-3 py-1 text-xs bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200 rounded hover:bg-purple-200 dark:hover:bg-purple-800 transition-colors"
+              >
+                Analysis
+              </a>
+              {% endif %}
+
+              <button
+                onclick="sharePrediction('{{ prediction.id }}')"
+                class="px-3 py-1 text-xs bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200 rounded hover:bg-green-200 dark:hover:bg-green-800 transition-colors"
+              >
+                Share
+              </button>
+            </div>
+
+            <button
+              onclick="deletePrediction('{{ prediction.id }}')"
+              class="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors"
+              title="Delete this prediction"
+            >
+              <svg
+                class="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                ></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Pagination -->
+      {% if page_obj.paginator.num_pages > 1 %}
+      <div class="flex justify-center items-center space-x-2">
+        {% if page_obj.has_previous %}
+        <a
+          href="?page=1{% if current_type != 'all' %}&type={{ current_type }}{% endif %}{% if current_category != 'all' %}&category={{ current_category }}{% endif %}{% if current_risk != 'all' %}&risk={{ current_risk }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% if per_page %}&per_page={{ per_page }}{% endif %}"
+          class="px-3 py-1 rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+        >
+          &laquo; First
+        </a>
+        <a
+          href="?page={{ page_obj.previous_page_number }}{% if current_type != 'all' %}&type={{ current_type }}{% endif %}{% if current_category != 'all' %}&category={{ current_category }}{% endif %}{% if current_risk != 'all' %}&risk={{ current_risk }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% if per_page %}&per_page={{ per_page }}{% endif %}"
+          class="px-3 py-1 rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+        >
+          Previous
+        </a>
+        {% endif %} {% for num in page_obj.paginator.page_range %} {% if page_obj.number == num %}
+        <span class="px-3 py-1 rounded-md bg-blue-600 text-white"
+          >{{ num }}</span
+        >
+        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+        <a
+          href="?page={{ num }}{% if current_type != 'all' %}&type={{ current_type }}{% endif %}{% if current_category != 'all' %}&category={{ current_category }}{% endif %}{% if current_risk != 'all' %}&risk={{ current_risk }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% if per_page %}&per_page={{ per_page }}{% endif %}"
+          class="px-3 py-1 rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+        >
+          {{ num }}
+        </a>
+        {% endif %} {% endfor %} {% if page_obj.has_next %}
+        <a
+          href="?page={{ page_obj.next_page_number }}{% if current_type != 'all' %}&type={{ current_type }}{% endif %}{% if current_category != 'all' %}&category={{ current_category }}{% endif %}{% if current_risk != 'all' %}&risk={{ current_risk }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% if per_page %}&per_page={{ per_page }}{% endif %}"
+          class="px-3 py-1 rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+        >
+          Next
+        </a>
+        <a
+          href="?page={{ page_obj.paginator.num_pages }}{% if current_type != 'all' %}&type={{ current_type }}{% endif %}{% if current_category != 'all' %}&category={{ current_category }}{% endif %}{% if current_risk != 'all' %}&risk={{ current_risk }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% if per_page %}&per_page={{ per_page }}{% endif %}"
+          class="px-3 py-1 rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+        >
+          Last &raquo;
+        </a>
+        {% endif %}
+      </div>
+      {% endif %} {% else %}
+      <!-- Empty State -->
+      <div class="text-center py-12">
+        <svg
+          class="mx-auto h-12 w-12 text-gray-400"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
+          ></path>
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">
+          No predictions found
+        </h3>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          Try adjusting your filters or clear them to see all predictions.
+        </p>
+        <div class="mt-6">
+          <a
+            href="{% url 'enhanced_predictions_dashboard' %}"
+            class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            Clear all filters
+          </a>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- JavaScript for interactions -->
+<script>
+  function deletePrediction(predictionId) {
+    if (
+      confirm(
+        "Are you sure you want to delete this prediction? This action cannot be undone.",
+      )
+    ) {
+      fetch(`/predictions/${predictionId}/delete/`, {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": "{{ csrf_token }}",
+          "Content-Type": "application/json",
+        },
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.success) {
+            location.reload();
+          } else {
+            alert("Error deleting prediction: " + data.error);
+          }
+        })
+        .catch((error) => {
+          console.error("Error:", error);
+          alert("An error occurred while deleting the prediction.");
+        });
+    }
+  }
+
+  function sharePrediction(predictionId) {
+    // Create a temporary input to copy the shareable link
+    const shareUrl =
+      window.location.origin + "/predictions/" + predictionId + "/share/";
+
+    // Copy to clipboard
+    navigator.clipboard
+      .writeText(shareUrl)
+      .then(() => {
+        // Show a temporary notification
+        const notification = document.createElement("div");
+        notification.className =
+          "fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg z-50";
+        notification.textContent = "Share link copied to clipboard!";
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+          notification.remove();
+        }, 3000);
+      })
+      .catch((err) => {
+        console.error("Could not copy text: ", err);
+      });
+  }
+
+  // Auto-submit filters when dropdown changes (optional)
+  document
+    .querySelectorAll(
+      'select[name="type"], select[name="category"], select[name="risk"]',
+    )
+    .forEach((select) => {
+      select.addEventListener("change", function () {
+        this.form.submit();
+      });
+    });
+
+  // ─── Email script runner (Fetch/Analyze buttons) ───────────────────────────
+  let _dashPollTimer = null;
+
+  async function runEmailScript(mode) {
+    const url =
+      mode === "deepseek" ? "/analyze-emails-deepseek/" : "/fetch-emails/";
+    const label =
+      mode === "deepseek"
+        ? "🤖 email_checker_with_deepseek_env.py"
+        : "📥 run_email_checker.py";
+    const btnId = mode === "deepseek" ? "dashDeepseekBtn" : "dashFetchBtn";
+    const btn = document.getElementById(btnId);
+
+    document.getElementById("dashLogPanel").classList.remove("hidden");
+    document.getElementById("dashLogLabel").textContent = label;
+    document.getElementById("dashLogStatus").textContent = "Starting…";
+    document.getElementById("dashLogOutput").innerHTML =
+      '<span class="text-gray-400">Launching…</span>';
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "⏳ Running…";
+    }
+
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": "{{ csrf_token }}",
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await res.json();
+      if (data.success) {
+        dashPollProcess(data.process_id, btn, mode, btnId);
+      } else {
+        document.getElementById("dashLogOutput").innerHTML =
+          `<div class="text-red-400">Error: ${data.error}</div>`;
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent =
+            mode === "deepseek"
+              ? "🤖 Analyze with DeepSeek AI"
+              : "📥 Fetch New Emails";
+        }
+      }
+    } catch (e) {
+      document.getElementById("dashLogOutput").innerHTML =
+        `<div class="text-red-400">Network error: ${e.message}</div>`;
+      if (btn) {
+        btn.disabled = false;
+      }
+    }
+  }
+
+  function dashPollProcess(processId, btn, mode, btnId) {
+    if (_dashPollTimer) clearInterval(_dashPollTimer);
+    _dashPollTimer = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/process-status/${processId}/`);
+        const data = await res.json();
+        if (!data.success) return;
+        const lines = data.output_lines || [];
+        const logEl = document.getElementById("dashLogOutput");
+        logEl.innerHTML = lines.length
+          ? lines
+              .map(
+                (l) =>
+                  `<div>${l.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>`,
+              )
+              .join("")
+          : '<span class="text-gray-400">Running…</span>';
+        logEl.scrollTop = logEl.scrollHeight;
+        const st = data.status || "running";
+        const statusEl = document.getElementById("dashLogStatus");
+        statusEl.textContent = st.charAt(0).toUpperCase() + st.slice(1);
+        if (st.startsWith("done") || st.startsWith("error")) {
+          clearInterval(_dashPollTimer);
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent =
+              mode === "deepseek"
+                ? "🤖 Analyze with DeepSeek AI"
+                : "📥 Fetch New Emails";
+          }
+          if (st.startsWith("done")) setTimeout(() => location.reload(), 2000);
+        }
+      } catch (e) {
+        /* ignore */
+      }
+    }, 1500);
+  }
+</script>
+
+<!-- Add some custom styles for better dark mode support -->
+<style>
+  @media (prefers-color-scheme: dark) {
+    .line-clamp-3 {
+      color: #e5e7eb;
+    }
+  }
+</style>
+{% endblock %}

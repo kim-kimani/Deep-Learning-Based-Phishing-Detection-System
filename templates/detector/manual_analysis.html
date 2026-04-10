@@ -1,0 +1,436 @@
+{% extends 'detector/base.html' %} {% block title %}Manual Analysis — {{ prediction.predicted_label }} — ML Security Platform{% endblock %} {% block content %}
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <!-- Back -->
+  <div class="mb-6">
+    <a
+      href="{% url 'prediction_detail' prediction.id %}"
+      class="inline-flex items-center text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm transition-colors"
+    >
+      <svg
+        class="w-4 h-4 mr-2"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M10 19l-7-7m0 0l7-7m-7 7h18"
+        />
+      </svg>
+      Back to Prediction Details
+    </a>
+  </div>
+
+  <!-- Header -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow mb-6">
+    <div
+      class="px-6 py-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center flex-wrap gap-3"
+    >
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+          📋 Manual Analysis
+        </h1>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          Detailed inspection and human assessment
+        </p>
+      </div>
+      <div class="flex items-center gap-2">
+        <span
+          class="px-3 py-1 text-sm font-semibold rounded-full {% if prediction.predicted_label == 'PHISHING' or prediction.predicted_label == 'MALICIOUS' %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 {% elif prediction.predicted_label == 'SPAM' or prediction.predicted_label == 'SUSPICIOUS' %}bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200 {% else %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200{% endif %}"
+        >
+          {{ prediction.predicted_label }}
+        </span>
+        <span
+          class="px-3 py-1 text-sm font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+        >
+          {{ prediction.prediction_type|upper }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- LEFT: Email Content -->
+    <div class="lg:col-span-2 space-y-5">
+      <!-- ML Verdict Card -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+        <h2 class="text-base font-bold text-gray-900 dark:text-white mb-4">
+          🤖 ML Model Verdict
+        </h2>
+        <div class="grid grid-cols-2 gap-4 mb-4">
+          <div
+            class="text-center p-4 rounded-lg {% if prediction.predicted_label == 'PHISHING' or prediction.predicted_label == 'MALICIOUS' %}bg-red-50 dark:bg-red-900/20 {% elif prediction.predicted_label == 'SPAM' or prediction.predicted_label == 'SUSPICIOUS' %}bg-orange-50 dark:bg-orange-900/20 {% else %}bg-green-50 dark:bg-green-900/20{% endif %}"
+          >
+            <div
+              class="text-3xl font-black {% if prediction.predicted_label == 'PHISHING' or prediction.predicted_label == 'MALICIOUS' %}text-red-600 dark:text-red-400 {% elif prediction.predicted_label == 'SPAM' or prediction.predicted_label == 'SUSPICIOUS' %}text-orange-600 dark:text-orange-400 {% else %}text-green-600 dark:text-green-400{% endif %}"
+            >
+              {{ prediction.predicted_label }}
+            </div>
+            <div class="text-xs text-gray-500 mt-1">Model Verdict</div>
+          </div>
+          <div class="text-center p-4 rounded-lg bg-gray-50 dark:bg-gray-700">
+            <div class="text-3xl font-black text-gray-900 dark:text-white">
+              {{ prediction.confidence_score|floatformat:1 }}%
+            </div>
+            <div class="text-xs text-gray-500 mt-1">ML Confidence</div>
+          </div>
+        </div>
+        <!-- Confidence bar -->
+        <div class="mb-1 flex justify-between text-xs text-gray-500">
+          <span>Confidence</span>
+          <span class="font-bold"
+            >{{ prediction.confidence_score|floatformat:1 }}%</span
+          >
+        </div>
+        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+          <div
+            class="h-3 rounded-full {% if prediction.predicted_label == 'PHISHING' or prediction.predicted_label == 'MALICIOUS' %}bg-red-500 {% elif prediction.predicted_label == 'SPAM' or prediction.predicted_label == 'SUSPICIOUS' %}bg-orange-500 {% else %}bg-green-500{% endif %}"
+            style="width: {{ prediction.confidence_score }}%"
+          ></div>
+        </div>
+        <!-- Risk Score -->
+        <div class="mt-4 flex items-center gap-3">
+          <span class="text-sm text-gray-500 shrink-0">Risk Score:</span>
+          <div class="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+            <div
+              class="h-2 rounded-full {% if real_risk_score >= 70 %}bg-red-500{% elif real_risk_score >= 40 %}bg-orange-400{% elif real_risk_score >= 20 %}bg-yellow-400{% else %}bg-green-500{% endif %}"
+              style="width: {{ real_risk_score }}%"
+            ></div>
+          </div>
+          <span class="text-sm font-bold text-gray-900 dark:text-white"
+            >{{ real_risk_score }}%</span
+          >
+        </div>
+      </div>
+
+      <!-- Email Viewer (Gmail-style) -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden">
+        <!-- Card header -->
+        <div
+          class="px-6 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between"
+        >
+          <div class="flex items-center gap-2">
+            <span class="text-lg">📧</span>
+            <h2 class="text-sm font-bold text-gray-700 dark:text-gray-200">
+              Email Message
+            </h2>
+          </div>
+          <div class="flex items-center gap-2">
+            {% if prediction.predicted_label == 'PHISHING' or prediction.predicted_label == 'SPAM' or prediction.predicted_label == 'MALICIOUS' %}
+            <span
+              class="text-xs px-2 py-0.5 bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 rounded-full font-semibold"
+              >⚠️ {{ prediction.predicted_label }}</span
+            >
+            {% else %}
+            <span
+              class="text-xs px-2 py-0.5 bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 rounded-full font-semibold"
+              >✅ {{ prediction.predicted_label }}</span
+            >
+            {% endif %}
+            <span class="text-xs text-gray-400"
+              >{{ prediction.timestamp|date:"M d, Y · H:i" }}</span
+            >
+          </div>
+        </div>
+
+        <!-- Email header: subject + sender -->
+        <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+          <!-- Subject -->
+          <h3
+            class="text-lg font-bold text-gray-900 dark:text-white mb-4 leading-snug"
+          >
+            {{ parsed_email.subject|default:"(No Subject)" }}
+          </h3>
+
+          <!-- Sender row -->
+          <div class="flex items-center gap-3">
+            {% with sender=parsed_email.from|default:"?" %}
+            <div
+              class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"
+              style="background: linear-gradient(135deg, #6366f1, #8b5cf6)"
+            >
+              {{ sender|slice:":1"|upper }}
+            </div>
+            {% endwith %}
+
+            <div class="min-w-0 flex-1">
+              {% if parsed_email.from %}
+              <p
+                class="text-sm font-semibold text-gray-900 dark:text-white truncate"
+              >
+                {{ parsed_email.from }}
+              </p>
+              {% else %}
+              <p class="text-sm text-gray-400 italic">Unknown sender</p>
+              {% endif %}
+              <p class="text-xs text-gray-400 mt-0.5">
+                To: <span class="text-gray-500">me</span>
+                {% if parsed_email.date %} · {{ parsed_email.date }}{% endif %}
+              </p>
+            </div>
+
+            <div class="shrink-0">
+              <span class="text-xs text-gray-400"
+                >{{ prediction.confidence_score|floatformat:0 }}%
+                confidence</span
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- Email body -->
+        <div class="px-6 py-5">
+          {% with body=parsed_email.body|default:email_content.content_preview %} {% if body %}
+          <div
+            class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap font-sans"
+          >
+            {{ body }}
+          </div>
+          {% else %}
+          <div
+            class="flex flex-col items-center justify-center py-8 text-center"
+          >
+            <div class="text-4xl mb-3">📭</div>
+            <p class="text-sm font-semibold text-gray-500">
+              No message body captured
+            </p>
+            <p class="text-xs text-gray-400 mt-1 max-w-sm">
+              The email body text was not stored in the report. The security
+              analysis was performed on the subject line and sender metadata.
+            </p>
+          </div>
+          {% endif %} {% endwith %}
+        </div>
+      </div>
+
+      <!-- Manual Assessment Form -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+        <h2 class="text-base font-bold text-gray-900 dark:text-white mb-4">
+          ✍️ Manual Assessment
+        </h2>
+        <form method="post" class="space-y-4">
+          {% csrf_token %}
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Final Assessment -->
+            <div>
+              <label
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
+                >Final Assessment</label
+              >
+              <select
+                name="assessment"
+                class="w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+              >
+                <option value="">— Select —</option>
+                <option
+                  value="safe"
+                  {%
+                  if
+                  prediction.predicted_label=""
+                  ="NOT PHISHING"
+                  or
+                  prediction.predicted_label=""
+                  ="SAFE"
+                  %}selected{%
+                  endif
+                  %}
+                >
+                  ✅ Safe — Legitimate Email
+                </option>
+                <option
+                  value="suspicious"
+                  {%
+                  if
+                  prediction.predicted_label=""
+                  ="SUSPICIOUS"
+                  %}selected{%
+                  endif
+                  %}
+                >
+                  🟡 Suspicious — Needs Review
+                </option>
+                <option
+                  value="phishing"
+                  {%
+                  if
+                  prediction.predicted_label=""
+                  ="PHISHING"
+                  %}selected{%
+                  endif
+                  %}
+                >
+                  🔴 Phishing — Malicious Intent
+                </option>
+                <option
+                  value="spam"
+                  {%
+                  if
+                  prediction.predicted_label=""
+                  ="SPAM"
+                  %}selected{%
+                  endif
+                  %}
+                >
+                  🟠 Spam — Unsolicited Email
+                </option>
+                <option value="malware">⚫ Malware — Contains Threats</option>
+              </select>
+            </div>
+
+            <!-- Confidence Override -->
+            <div>
+              <label
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
+              >
+                Human Confidence:
+                <span id="confValue"
+                  >{{ prediction.confidence_score|floatformat:0 }}%</span
+                >
+              </label>
+              <input
+                type="range"
+                name="confidence"
+                min="0"
+                max="100"
+                value="{{ prediction.confidence_score|floatformat:0 }}"
+                oninput="
+                  document.getElementById('confValue').textContent =
+                    this.value + '%'
+                "
+                class="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-full appearance-none cursor-pointer"
+              />
+            </div>
+          </div>
+
+          <!-- Notes -->
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
+              >Analysis Notes</label
+            >
+            <textarea
+              name="notes"
+              rows="4"
+              placeholder="Add detailed observations, reasoning, or recommendations…"
+              class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-y"
+            ></textarea>
+          </div>
+
+          <div class="flex justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onclick="window.history.back()"
+              class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors"
+            >
+              Save Assessment
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <!-- /left col -->
+
+    <!-- RIGHT: Risk Indicators -->
+    <div class="space-y-5">
+      <!-- Risk Indicator Checklist -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 sticky top-4">
+        <h2 class="text-base font-bold text-gray-900 dark:text-white mb-4">
+          🚨 Risk Indicators
+        </h2>
+        <div class="space-y-3">
+          {% for ind in risk_indicators %}
+          <div
+            class="flex items-start gap-3 p-3 rounded-lg {% if ind.detected %} {% if ind.name == 'ML Threat Detected' %}bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 {% else %}bg-orange-50 dark:bg-orange-900/20{% endif %} {% else %}bg-gray-50 dark:bg-gray-700/50{% endif %}"
+          >
+            <div class="mt-0.5 text-lg shrink-0">
+              {% if ind.detected %}⚠️{% else %}✅{% endif %}
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between gap-1">
+                <p class="text-sm font-semibold text-gray-900 dark:text-white">
+                  {{ ind.name }}
+                </p>
+                <span
+                  class="text-xs px-1.5 py-0.5 rounded font-bold shrink-0 {% if ind.detected %}bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300{% else %}bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300{% endif %}"
+                >
+                  {% if ind.detected %}DETECTED{% else %}CLEAR{% endif %}
+                </span>
+              </div>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                {{ ind.description }}
+              </p>
+            </div>
+          </div>
+          {% empty %}
+          <p class="text-sm text-gray-500">No risk indicators computed.</p>
+          {% endfor %}
+        </div>
+
+        <!-- Timestamp -->
+        <div class="mt-5 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <p class="text-xs text-gray-500 dark:text-gray-400">
+            Prediction timestamp:<br />
+            <strong class="text-gray-700 dark:text-gray-200"
+              >{{ prediction.timestamp|date:"M d, Y H:i:s" }}</strong
+            >
+          </p>
+          {% if prediction.threat_category %}
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+            Threat Category:
+            <strong>{{ prediction.threat_category.name }}</strong>
+          </p>
+          {% endif %} {% if prediction.risk_level %}
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Risk Level: <strong>{{ prediction.risk_level.name }}</strong>
+          </p>
+          {% endif %}
+        </div>
+
+        <!-- Quick Links -->
+        <div class="mt-4 flex flex-col gap-2">
+          <a
+            href="{% url 'deepseek_analysis_page' prediction.id %}"
+            class="w-full text-center px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg font-medium transition-colors"
+          >
+            🤖 DeepSeek AI Analysis
+          </a>
+          <a
+            href="{% url 'email_dashboard' %}"
+            class="w-full text-center px-3 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded-lg font-medium transition-colors"
+          >
+            📧 Email Dashboard
+          </a>
+        </div>
+      </div>
+    </div>
+    <!-- /right col -->
+  </div>
+</div>
+
+<script>
+  // Show success toast on form submit
+  document.querySelector("form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    const toast = document.createElement("div");
+    toast.className =
+      "fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-xl shadow-xl z-50 font-semibold";
+    toast.textContent = "✅ Assessment saved!";
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2500);
+    setTimeout(
+      () =>
+        (window.location.href = "{% url 'prediction_detail' prediction.id %}"),
+      1000,
+    );
+  });
+</script>
+{% endblock %}

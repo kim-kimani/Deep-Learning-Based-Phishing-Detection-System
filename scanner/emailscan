@@ -1,0 +1,69 @@
+#!/bin/bash
+
+# Configuration
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SCANNER_DIR="$PROJECT_ROOT/scanner"
+PYTHON_BIN="python3"
+PORT=8000
+
+echo "--- Cybersecurity Email Security Scanner ---"
+echo "Project Root: $PROJECT_ROOT"
+
+# 1. Virtual Environment Detection
+echo "Step 1: Detecting Virtual Environment..."
+# Check in current, project root, and parent of project root
+VENV_DIRS=("$PROJECT_ROOT/venv" "$PROJECT_ROOT/.venv" "$PROJECT_ROOT/env" "$PROJECT_ROOT/../venv")
+VENV_FOUND=false
+
+for d in "${VENV_DIRS[@]}"; do
+    if [ -d "$d" ]; then
+        echo "Found venv in $d. Activating..."
+        source "$d/bin/activate"
+        PYTHON_BIN="python"
+        VENV_FOUND=true
+        break
+    fi
+done
+
+if [ "$VENV_FOUND" = false ]; then
+    echo "Warning: No virtual environment found. Using system python."
+fi
+
+# 2. Server Management
+echo "Step 2: Checking Security API (Django Server)..."
+if lsof -Pi :$PORT -sTCP:LISTEN -t >/dev/null ; then
+    echo "Security API is already running on port $PORT."
+else
+    echo "Security API not running. Starting Django server..."
+    cd "$PROJECT_ROOT"
+    nohup $PYTHON_BIN manage.py runserver $PORT > "$SCANNER_DIR/django_startup.log" 2>&1 &
+    
+    # Wait for server to start
+    echo "Waiting for server to initialize..."
+    MAX_RETRIES=15
+    RETRY_COUNT=0
+    until curl -s "http://localhost:$PORT/" > /dev/null || [ $RETRY_COUNT -eq $MAX_RETRIES ]; do
+        sleep 1
+        ((RETRY_COUNT++))
+        echo -n "."
+    done
+    echo ""
+    
+    if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+        echo "Error: Server failed to start within 15 seconds. Check $SCANNER_DIR/django_startup.log"
+        exit 1
+    fi
+    echo "Security API is now ready."
+fi
+
+# 3. Execution
+echo "Step 3: Running Security Scan..."
+$PYTHON_BIN "$SCANNER_DIR/emailscan_core.py" "$@"
+
+# 4. Cleanup
+echo ""
+echo "-------------------------------------------------------"
+echo "Scan complete. Results stored in:"
+echo "  [ML] $SCANNER_DIR/Scan Results Dir/Scan $(date +%Y-%m-%d)/ML scans"
+echo "  [AI] $SCANNER_DIR/Scan Results Dir/Scan $(date +%Y-%m-%d)/AI scans"
+echo "-------------------------------------------------------"

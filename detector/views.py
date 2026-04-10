@@ -474,9 +474,7 @@ def predict_email(request):
         # Save to both old and new models for compatibility
         PredictionHistory.objects.create(
             prediction_type='email',
-            input_text=(
-                email_text[:200] + '...' if len(email_text) > 200 else email_text
-            ),
+            input_text=email_text,  # store full email body (no truncation)
             predicted_label=predicted_label,
             confidence_score=confidence_score
         )
@@ -494,12 +492,9 @@ def predict_email(request):
         else:
             risk_level = RiskLevel.objects.filter(name='Low').first()
         
-        EnhancedPredictionHistory.objects.create(
+        prediction = EnhancedPredictionHistory.objects.create(
             prediction_type='email',
-            input_text=(
-                email_text[:200] + '...'
-                if len(email_text) > 200 else email_text
-            ),
+            input_text=email_text,  # store full email body (no truncation)
             predicted_label=predicted_label,
             confidence_score=confidence_score,
             threat_category=threat_category,
@@ -510,6 +505,7 @@ def predict_email(request):
         # Prepare comprehensive response data
         response_data = {
             'success': True,
+            'prediction_id': str(prediction.id),
             'result': predicted_label,
             'confidence_score': confidence_score,
             'confidence_level': get_confidence_level(confidence_score),

@@ -20,10 +20,17 @@ venv/
 env/
 ENV/
 
+# Scan Results
+scan_results/
+email_checker.log
+email_config.json
+/scanner/Scan_Results_Dir/
+
 # Database
 *.db
 *.sqlite3
 db.sqlite3
+email_config.json
 
 # Model files
 *.pkl
@@ -39,6 +46,9 @@ deep_learning_models/
 datasets/
 temp_uploads/
 temp_multimodal/
+phishing_results_*.json
+email_reports/
+enhanced_email_reports/
 
 # Logs
 *.log

@@ -1,0 +1,1107 @@
+{% extends 'detector/base.html' %} 
+{% block title %}Prediction Details — {{ prediction.predicted_label }} — ML Security Platform{% endblock %} 
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <!-- Back Navigation -->
+  <div class="mb-6 flex items-center gap-3">
+    <a
+      href="{% url 'email_dashboard' %}"
+      class="inline-flex items-center text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm transition-colors"
+    >
+      <svg
+        class="w-4 h-4 mr-1.5"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M10 19l-7-7m0 0l7-7m-7 7h18"
+        />
+      </svg>
+      📧 Email Dashboard
+    </a>
+    <span class="text-gray-300 dark:text-gray-600">/</span>
+    <a
+      href="{% url 'enhanced_predictions_dashboard' %}"
+      class="text-blue-600 dark:text-blue-400 hover:underline text-sm"
+      >All Predictions</a
+    >
+    <span class="text-gray-300 dark:text-gray-600">/</span>
+    <span class="text-gray-500 text-sm">Prediction Details</span>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- LEFT COLUMN — Main content -->
+    <div class="lg:col-span-2 space-y-5">
+      <!-- Header Card: verdict + confidence -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow">
+        <div
+          class="px-6 py-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center flex-wrap gap-3"
+        >
+          <h1 class="text-xl font-bold text-gray-900 dark:text-white">
+            Prediction Details
+          </h1>
+          <div class="flex items-center gap-2">
+            <span
+              class="px-3 py-1 text-sm font-bold rounded-full {% if prediction.predicted_label == 'PHISHING' or prediction.predicted_label == 'MALICIOUS' %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 {% elif prediction.predicted_label == 'SPAM' or prediction.predicted_label == 'SUSPICIOUS' %}bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200 {% else %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200{% endif %}"
+            >
+              {{ prediction.predicted_label }}
+            </span>
+            <span
+              class="px-3 py-1 text-sm font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+            >
+              {{ prediction.prediction_type|upper }}
+            </span>
+          </div>
+        </div>
+
+        <div class="p-6">
+          <!-- Dual Score Display: ML Model + DeepSeek -->
+
+          <!-- Warning banner: ML may not be up-to-date -->
+          <div
+            class="mb-4 flex items-start gap-2 px-3 py-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-lg text-xs text-amber-800 dark:text-amber-200"
+          >
+            <span class="text-base shrink-0">⚠️</span>
+            <span
+              ><strong>Note:</strong> The ML model score is based on a trained
+              classifier that may not reflect the latest phishing tactics. For
+              more accurate analysis, use <strong>DeepSeek AI</strong> which
+              evaluates the email content in real time.</span
+            >
+          </div>
+
+          <!-- ML Model Score -->
+          <div
+            class="mb-4 p-4 bg-gray-50 dark:bg-gray-700/60 rounded-xl border border-gray-200 dark:border-gray-600"
+          >
+            <div class="flex justify-between items-center mb-2">
+              <div>
+                <span
+                  class="text-sm font-semibold text-gray-700 dark:text-gray-200"
+                  >🧠 ML Model</span
+                >
+                <span class="ml-2 text-xs text-gray-400"
+                  >(Trained classifier — may be outdated)</span
+                >
+              </div>
+              <div class="text-right">
+                <span
+                  class="text-lg font-bold {% if prediction.predicted_label == 'PHISHING' or prediction.predicted_label == 'MALICIOUS' %}text-red-600 dark:text-red-400 {% elif prediction.predicted_label == 'SPAM' or prediction.predicted_label == 'SUSPICIOUS' %}text-orange-600 {% else %}text-green-600 dark:text-green-400{% endif %}"
+                  >{{ prediction.predicted_label }}</span
+                >
+                <span class="ml-2 text-sm text-gray-600 dark:text-gray-300"
+                  >{{ prediction.confidence_score|floatformat:1 }}%
+                  confident</span
+                >
+              </div>
+            </div>
+            <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5">
+              <div
+                class="h-2.5 rounded-full {% if prediction.predicted_label == 'PHISHING' or prediction.predicted_label == 'MALICIOUS' %}bg-red-500 {% elif prediction.predicted_label == 'SPAM' or prediction.predicted_label == 'SUSPICIOUS' %}bg-orange-500 {% else %}bg-green-500{% endif %}"
+                style="width:{{ prediction.confidence_score }}%"
+              ></div>
+            </div>
+            <p class="text-xs text-gray-400 mt-1">
+              Risk Score:
+              <strong
+                class="{% if prediction.risk_score >= 70 %}text-red-500{% elif prediction.risk_score >= 40 %}text-orange-500{% else %}text-green-500{% endif %}"
+                >{{ prediction.risk_score|floatformat:1 }}/100</strong
+              >
+              &nbsp;·&nbsp; This score is computed from the ML label ×
+              confidence only.
+            </p>
+          </div>
+
+          <!-- DeepSeek AI Score -->
+          {% if deepseek_analysis %}
+          <div
+            class="mb-4 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-200 dark:border-purple-700"
+          >
+            <div class="flex justify-between items-center mb-2">
+              <div>
+                <span
+                  class="text-sm font-semibold text-purple-700 dark:text-purple-300"
+                  >🤖 DeepSeek AI</span
+                >
+                <span class="ml-2 text-xs text-gray-400"
+                  >(Real-time LLM analysis)</span
+                >
+              </div>
+              <div class="text-right">
+                {% with verdict=deepseek_analysis.verdict|default:deepseek_analysis.threat_level|default:deepseek_analysis.combined_verdict %}
+                <span
+                  class="text-lg font-bold {% if 'PHISHING' in verdict or 'MALICIOUS' in verdict or 'CRITICAL' in verdict %}text-red-600 dark:text-red-400 {% elif 'SUSPICIOUS' in verdict or 'HIGH' in verdict %}text-orange-600 {% else %}text-green-600 dark:text-green-400{% endif %}"
+                  >{{ verdict|default:"—" }}</span
+                >
+                {% endwith %} 
+                {% with risk=deepseek_analysis.risk_score|default:deepseek_analysis.confidence %}
+                  {% if risk %}
+                    <span class="ml-2 text-sm text-gray-600 dark:text-gray-300">Risk: {{ risk|floatformat:0 }}/100</span>
+                  {% endif %}
+                {% endwith %}
+              </div>
+            </div>
+            {% with risk=deepseek_analysis.risk_score|default:deepseek_analysis.confidence %}
+              {% if risk %}
+                <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5">
+                  <div
+                    class="h-2.5 rounded-full {% if risk >= 70 %}bg-red-500{% elif risk >= 40 %}bg-orange-400{% elif risk >= 20 %}bg-yellow-400{% else %}bg-green-500{% endif %}"
+                    style="width:{{ risk|floatformat:0 }}%"
+                  ></div>
+                </div>
+              {% endif %}
+            {% endwith %}
+            <p class="text-xs text-gray-400 mt-1">
+              DeepSeek evaluates email content, links, headers, and language
+              patterns independently from the ML model.
+            </p>
+          </div>
+          {% else %}
+          <div
+            class="mb-4 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-200 dark:border-purple-700"
+          >
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <div>
+                <span
+                  class="text-sm font-semibold text-purple-700 dark:text-purple-300"
+                  >🤖 DeepSeek AI</span
+                >
+                <span class="ml-2 text-xs text-gray-400"
+                  >(Real-time LLM analysis)</span
+                >
+              </div>
+              <a
+                href="{% url 'deepseek_analysis_page' prediction.id %}"
+                class="text-xs px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors"
+              >
+                Run DeepSeek Analysis →
+              </a>
+            </div>
+            <p class="text-xs text-gray-400 mt-2">
+              No DeepSeek analysis yet. Click above to get an AI-powered,
+              real-time assessment that goes beyond the ML model.
+            </p>
+          </div>
+          {% endif %}
+
+          <!-- Metadata strip -->
+          <div class="flex flex-wrap gap-3">
+            <span
+              class="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-full text-gray-600 dark:text-gray-300"
+              >{{ prediction.prediction_type|title }}</span
+            >
+            {% if prediction.threat_category %}
+            <span
+              class="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-full text-gray-600 dark:text-gray-300"
+            >
+              {{ prediction.threat_category.name }}
+            </span>
+            {% endif %} 
+            {% if prediction.risk_level %}
+            <span
+              class="text-xs px-2 py-1 rounded-full text-white font-medium"
+              style="background:{{ prediction.risk_level.color }}"
+            >
+              {{ prediction.risk_level.name }}
+            </span>
+            {% endif %}
+          </div>
+
+          <p class="text-xs text-gray-400 dark:text-gray-500 mt-3">
+            Analysed {{ prediction.timestamp|date:"M d, Y H:i:s" }} 
+            {% if prediction.processing_time %}· {{ prediction.processing_time|floatformat:3 }}s {% endif %}
+          </p>
+        </div>
+      </div>
+
+      <!-- Email Fields (parsed) -->
+      {% if prediction.prediction_type == 'email' %}
+      <!-- Email Content (structured with parsed headers) -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow">
+        <div
+          class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center"
+        >
+          <h2 class="text-base font-bold text-gray-900 dark:text-white">
+            📧 Email Content
+          </h2>
+          <span class="text-xs text-gray-400"
+            >{{ prediction.timestamp|date:"M d, Y H:i" }}</span
+          >
+        </div>
+        <div class="divide-y divide-gray-100 dark:divide-gray-700">
+          <!-- Subject -->
+          <div class="flex items-baseline gap-3 px-6 py-3">
+            <span
+              class="text-xs font-semibold uppercase text-gray-400 w-16 shrink-0"
+              >Subject</span
+            >
+            <span class="text-sm font-semibold text-gray-900 dark:text-white"
+              >{{ parsed_email.subject|default:prediction.input_text|truncatechars:100 }}</span
+            >
+          </div>
+
+          <!-- From -->
+          {% if parsed_email.from %}
+          <div class="flex items-baseline gap-3 px-6 py-3">
+            <span
+              class="text-xs font-semibold uppercase text-gray-400 w-16 shrink-0"
+              >From</span
+            >
+            <span class="text-sm text-gray-700 dark:text-gray-300 font-mono"
+              >{{ parsed_email.from }}</span
+            >
+          </div>
+          {% endif %}
+
+          <!-- Date -->
+          {% if parsed_email.date %}
+          <div class="flex items-baseline gap-3 px-6 py-3">
+            <span
+              class="text-xs font-semibold uppercase text-gray-400 w-16 shrink-0"
+              >Date</span
+            >
+            <span class="text-sm text-gray-600 dark:text-gray-300"
+              >{{ parsed_email.date }}</span
+            >
+          </div>
+          {% endif %}
+
+          <!-- Body -->
+          <div class="px-6 py-4">
+            <p class="text-xs font-semibold uppercase text-gray-400 mb-2">
+              Body
+            </p>
+            <div
+              class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 overflow-y-auto"
+              style="max-height: 70vh"
+            >
+              {% if parsed_email.body %}
+              <pre
+                class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-sans leading-relaxed"
+              >{{ parsed_email.body }}</pre>
+              {% elif email_content.content_preview %}
+              <pre
+                class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-sans leading-relaxed"
+              >{{ email_content.content_preview }}</pre>
+              {% else %}
+              <pre
+                class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-sans leading-relaxed"
+              >{{ prediction.input_text }}</pre>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- AI Analysis Report (DeepSeek rich data) -->
+      {% if deepseek_analysis %}
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow">
+        <div
+          class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center"
+        >
+          <h2 class="text-base font-bold text-gray-900 dark:text-white">
+            🤖 AI Analysis Report
+          </h2>
+          <a
+            href="{% url 'deepseek_analysis_page' prediction.id %}"
+            class="text-xs text-purple-500 hover:underline"
+            >Full Analysis →</a
+          >
+        </div>
+        <div class="p-6 space-y-4">
+          <!-- Threat Assessment -->
+          {% with ta=deepseek_analysis.threat_assessment %}
+            {% if ta %}
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div class="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-700">
+                  <div class="text-xs text-gray-400 uppercase mb-1">
+                    Threat Level
+                  </div>
+                  <div
+                    class="font-black text-lg {% if ta.overall_threat_level == 'CRITICAL' or ta.overall_threat_level == 'HIGH' %}text-red-600 {% elif ta.overall_threat_level == 'MEDIUM' %}text-orange-500 {% elif ta.overall_threat_level == 'LOW' %}text-green-600 {% else %}text-gray-800 dark:text-white{% endif %}"
+                  >
+                    {{ ta.overall_threat_level|default:deepseek_analysis.threat_level|default:"—" }}
+                  </div>
+                </div>
+                {% with rs=deepseek_analysis.risk_scoring %}
+                  {% if rs %}
+                    <div class="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-700">
+                      <div class="text-xs text-gray-400 uppercase mb-1">
+                        Overall Risk
+                      </div>
+                      <div
+                        class="font-black text-lg {% if rs.overall_risk_score >= 70 %}text-red-600 {% elif rs.overall_risk_score >= 40 %}text-orange-500 {% else %}text-green-600{% endif %}"
+                      >
+                        {{ rs.overall_risk_score|floatformat:0 }}/100
+                      </div>
+                    </div>
+                    <div class="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-700">
+                      <div class="text-xs text-gray-400 uppercase mb-1">Technical</div>
+                      <div class="font-bold text-gray-900 dark:text-white text-lg">
+                        {{ rs.technical_risk|floatformat:0 }}
+                      </div>
+                    </div>
+                    <div class="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-700">
+                      <div class="text-xs text-gray-400 uppercase mb-1">Content</div>
+                      <div class="font-bold text-gray-900 dark:text-white text-lg">
+                        {{ rs.content_risk|floatformat:0 }}
+                      </div>
+                    </div>
+                  {% endif %}
+                {% endwith %}
+              </div>
+
+              <!-- Primary category + confidence -->
+              {% if ta.primary_threat_category %}
+                <div class="flex items-center gap-2 flex-wrap text-sm">
+                  <span class="text-gray-500">Category:</span>
+                  <span class="font-semibold text-gray-900 dark:text-white"
+                    >{{ ta.primary_threat_category }}</span
+                  >
+                  {% if ta.confidence_score %}
+                    <span class="text-gray-400">· AI Confidence: <strong>{{ ta.confidence_score }}%</strong></span>
+                  {% endif %}
+                </div>
+              {% endif %}
+            {% endif %}
+          {% endwith %}
+
+          <!-- Risk bar -->
+          {% with risk=deepseek_analysis.risk_scoring.overall_risk_score|default:deepseek_analysis.risk_score %}
+            {% if risk %}
+              <div>
+                <div class="flex justify-between text-xs text-gray-500 mb-1">
+                  <span>DeepSeek Risk Score</span
+                  ><span class="font-bold">{{ risk|floatformat:0 }}/100</span>
+                </div>
+                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                  <div
+                    class="h-2.5 rounded-full {% if risk >= 70 %}bg-red-500{% elif risk >= 40 %}bg-orange-400{% elif risk >= 20 %}bg-yellow-400{% else %}bg-green-500{% endif %}"
+                    style="width:{{ risk|floatformat:0 }}%"
+                  ></div>
+                </div>
+                <div class="flex justify-between text-xs text-gray-400 mt-0.5">
+                  <span>0 Safe</span><span>40 Suspicious</span><span>70 High</span
+                  ><span>100 Critical</span>
+                </div>
+              </div>
+            {% endif %}
+          {% endwith %}
+
+          <!-- Summary -->
+          {% if deepseek_analysis.analysis_summary %}
+          <div
+            class="text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 rounded-lg p-3"
+          >
+            {{ deepseek_analysis.analysis_summary }}
+          </div>
+          {% endif %}
+
+          <!-- Technical + Content analysis (key indicators) -->
+          {% if deepseek_analysis.technical_analysis or deepseek_analysis.content_analysis %}
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            {% if deepseek_analysis.technical_analysis %}
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+              <p class="font-semibold text-gray-600 dark:text-gray-300 mb-2">
+                🔧 Technical Analysis
+              </p>
+              {% if deepseek_analysis.technical_analysis.sender_reputation %}
+              <div class="flex gap-2 mb-1">
+                <span class="text-gray-400">Sender:</span>
+                <span
+                  class="font-medium {% if deepseek_analysis.technical_analysis.sender_reputation == 'GOOD' %}text-green-600 {% elif deepseek_analysis.technical_analysis.sender_reputation == 'BAD' %}text-red-600 {% else %}text-orange-500{% endif %}"
+                >
+                  {{ deepseek_analysis.technical_analysis.sender_reputation }}
+                </span>
+              </div>
+              {% endif %}
+              {% if deepseek_analysis.technical_analysis.domain_analysis %}
+              <p class="text-gray-500 dark:text-gray-400 leading-relaxed">
+                {{ deepseek_analysis.technical_analysis.domain_analysis|truncatewords:25 }}
+              </p>
+              {% endif %}
+            </div>
+            {% endif %}
+            {% if deepseek_analysis.content_analysis %}
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+              <p class="font-semibold text-gray-600 dark:text-gray-300 mb-2">
+                📝 Content Analysis
+              </p>
+              {% if deepseek_analysis.content_analysis.social_engineering_tactics %}
+              <ul
+                class="list-disc list-inside text-gray-500 dark:text-gray-400 space-y-0.5"
+              >
+                {% for tactic in deepseek_analysis.content_analysis.social_engineering_tactics|slice:':3' %}
+                <li>{{ tactic }}</li>
+                {% endfor %}
+              </ul>
+              {% endif %}
+            </div>
+            {% endif %}
+          </div>
+          {% endif %}
+
+          <!-- Recommendations -->
+          {% if deepseek_analysis.recommendations %}
+            {% with rec=deepseek_analysis.recommendations %}
+              {% if rec.immediate_actions %}
+                <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+                  <p class="text-xs font-semibold text-blue-600 dark:text-blue-300 mb-1.5">
+                    ✅ Recommended Actions
+                  </p>
+                  <ul class="list-disc list-inside text-xs text-blue-600 dark:text-blue-400 space-y-0.5">
+                    {% for action in rec.immediate_actions|slice:':4' %}
+                    <li>{{ action }}</li>
+                    {% endfor %}
+                  </ul>
+                </div>
+              {% endif %}
+            {% endwith %}
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Report Files & Formatted View -->
+      {% if report_files %}
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden">
+        <div
+          class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-700/30 flex justify-between items-center"
+        >
+          <h2
+            class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2"
+          >
+            <svg
+              class="w-5 h-5 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+            📄 Report Files
+          </h2>
+          <span class="text-xs text-gray-400">Analysis Artifacts</span>
+        </div>
+
+        <div class="p-6">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            {% if report_files.json %}
+            <a
+              href="/report-file/?path={{ report_files.json }}"
+              target="_blank"
+              class="block p-4 border border-yellow-200/50 dark:border-yellow-700/30 rounded-xl bg-yellow-50/50 dark:bg-yellow-900/10 hover:border-yellow-300 transition-all group"
+            >
+              <div class="flex items-center gap-3 mb-2">
+                <div
+                  class="p-2 rounded-lg bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-400"
+                >
+                  <svg
+                    class="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M4 6h16M4 12h16m-7 6h7"
+                    />
+                  </svg>
+                </div>
+                <span class="text-sm font-bold text-gray-900 dark:text-white"
+                  >📋 JSON Report</span
+                >
+              </div>
+              <div class="text-xs text-gray-400 truncate mb-2 px-1">
+                {{ report_files.base_name }}
+              </div>
+              <div
+                class="text-xs text-yellow-600 dark:text-yellow-400 font-semibold group-hover:underline px-1"
+              >
+                Click to open ↗
+              </div>
+            </a>
+            {% endif %}
+            {% if report_files.html %}
+            <a
+              href="/report-file/?path={{ report_files.html }}"
+              target="_blank"
+              class="block p-4 border border-blue-200/50 dark:border-blue-700/30 rounded-xl bg-blue-50/50 dark:bg-blue-900/10 hover:border-blue-300 transition-all group"
+            >
+              <div class="flex items-center gap-3 mb-2">
+                <div
+                  class="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400"
+                >
+                  <svg
+                    class="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"
+                    />
+                  </svg>
+                </div>
+                <span class="text-sm font-bold text-gray-900 dark:text-white"
+                  >🌐 HTML Report</span
+                >
+              </div>
+              <div class="text-xs text-gray-400 mb-2 px-1">Formatted view</div>
+              <div
+                class="text-xs text-blue-600 dark:text-blue-400 font-semibold group-hover:underline px-1"
+              >
+                Click to open ↗
+              </div>
+            </a>
+            {% endif %}
+            {% if report_files.txt %}
+            <a
+              href="/report-file/?path={{ report_files.txt|urlencode }}"
+              target="_blank"
+              class="block p-4 border border-green-200/50 dark:border-green-700/30 rounded-xl bg-green-50/50 dark:bg-green-900/10 hover:border-green-300 transition-all group"
+            >
+              <div class="flex items-center gap-3 mb-2">
+                <div
+                  class="p-2 rounded-lg bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-400"
+                >
+                  <svg
+                    class="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                </div>
+                <span class="text-sm font-bold text-gray-900 dark:text-white"
+                  >📄 Text Report</span
+                >
+              </div>
+              <div class="text-xs text-gray-400 mb-2 px-1">
+                Plain text summary
+              </div>
+              <div
+                class="text-xs text-green-600 dark:text-green-400 font-semibold group-hover:underline px-1"
+              >
+                Click to open ↗
+              </div>
+            </a>
+            {% endif %}
+          </div>
+
+          <!-- Embedded HTML Report -->
+          {% if html_report_content %}
+          <div class="mt-8 border-t border-gray-100 dark:border-gray-700 pt-6">
+            <h3
+              class="text-sm font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"
+            >
+              <span
+                class="p-1 px-2 rounded-md bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400 text-xs"
+                >AI VIEW</span
+              >
+              Embedded Security Report
+            </h3>
+            <div
+              class="rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden bg-gray-900 shadow-2xl"
+            >
+              <iframe
+                id="deepseek-report-frame"
+                srcdoc="{{ html_report_content|escapejs }}"
+                class="w-full border-none"
+                style="height: 600px; min-height: 50vh"
+                onload="
+                  this.style.height =
+                    this.contentWindow.document.body.scrollHeight + 'px'
+                "
+              ></iframe>
+            </div>
+            <p class="text-[10px] text-gray-400 mt-3 text-center">
+              Generated by DeepSeek AI Security Analyzer &bull; Interactive
+              Insight View
+            </p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+    <!-- /left col -->
+
+    <!-- RIGHT COLUMN — Actions & Info -->
+    <div class="space-y-5">
+      <!-- Action Buttons -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 class="text-base font-bold text-gray-900 dark:text-white">
+            Actions
+          </h2>
+        </div>
+        <div class="p-5 space-y-3">
+          <a
+            href="{% url 'deepseek_analysis_page' prediction.id %}"
+            class="w-full flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition-colors text-sm"
+          >
+            <svg
+              class="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+              />
+            </svg>
+            🤖 DeepSeek AI Analysis
+          </a>
+
+          <a
+            href="{% url 'manual_analysis_page' prediction.id %}"
+            class="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors text-sm"
+          >
+            <svg
+              class="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+              />
+            </svg>
+            📋 Manual Analysis
+          </a>
+
+          {% if prediction.prediction_type == 'email' %}
+          <button
+            onclick="reanalyzeEmail('{{ prediction.id }}', this)"
+            class="w-full flex items-center justify-center gap-2 px-4 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-semibold transition-colors text-sm"
+          >
+            <svg
+              class="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
+            </svg>
+            🔄 Re-analyze with DeepSeek
+          </button>
+          {% endif %}
+
+          <hr class="border-gray-200 dark:border-gray-700" />
+
+          <button
+            onclick="deletePrediction('{{ prediction.id }}')"
+            class="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-colors text-sm"
+          >
+            <svg
+              class="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+              />
+            </svg>
+            Delete Prediction
+          </button>
+        </div>
+      </div>
+
+      <!-- Threat Intelligence -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 class="text-base font-bold text-gray-900 dark:text-white">
+            Threat Intelligence
+          </h2>
+        </div>
+        <div class="p-5 space-y-3 text-sm">
+          <div class="flex justify-between">
+            <span class="text-gray-500">Prediction ID</span>
+            <span class="font-mono text-xs text-gray-700 dark:text-gray-300"
+              >{{ prediction.id|truncatechars:12 }}</span
+            >
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-500">Timestamp</span>
+            <span class="font-medium text-gray-900 dark:text-white text-xs"
+              >{{ prediction.timestamp|date:"M d, Y H:i" }}</span
+            >
+          </div>
+          {% if prediction.domain %}
+          <div class="flex justify-between">
+            <span class="text-gray-500">Domain</span>
+            <span class="font-medium text-gray-900 dark:text-white"
+              >{{ prediction.domain }}</span
+            >
+          </div>
+          {% endif %}
+          {% if prediction.country %}
+          <div class="flex justify-between">
+            <span class="text-gray-500">Country</span>
+            <span class="font-medium text-gray-900 dark:text-white"
+              >{{ prediction.country }}</span
+            >
+          </div>
+          {% endif %}
+          {% if prediction.isp %}
+          <div class="flex justify-between">
+            <span class="text-gray-500">ISP</span>
+            <span class="font-medium text-gray-900 dark:text-white text-xs"
+              >{{ prediction.isp }}</span
+            >
+          </div>
+          {% endif %}
+          {% if prediction.threat_category %}
+          <div class="flex justify-between">
+            <span class="text-gray-500">Threat Category</span>
+            <span class="font-medium text-gray-900 dark:text-white"
+              >{{ prediction.threat_category.name }}</span
+            >
+          </div>
+          {% endif %}
+          {% if prediction.risk_level %}
+          <div class="flex justify-between">
+            <span class="text-gray-500">Risk Level</span>
+            <span
+              class="font-semibold"
+              style="color: {{ prediction.risk_level.color }}"
+            >
+              {{ prediction.risk_level.name }} ({{ prediction.risk_level.level }})
+            </span>
+          </div>
+          {% endif %}
+          <div class="flex justify-between">
+            <span class="text-gray-500">Risk Score</span>
+            <span
+              class="font-bold {% if prediction.risk_score >= 70 %}text-red-600 dark:text-red-400 {% elif prediction.risk_score >= 40 %}text-orange-500 {% else %}text-green-600 dark:text-green-400{% endif %}"
+            >
+              {{ prediction.risk_score|floatformat:1 }}/100
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Re-analyze result (inline) -->
+      <div
+        id="reanalyzeCard"
+        class="hidden bg-white dark:bg-gray-800 rounded-xl shadow"
+      >
+        <div
+          class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center"
+        >
+          <h2 class="text-base font-bold text-gray-900 dark:text-white">
+            🤖 DeepSeek Result
+          </h2>
+          <button
+            onclick="document.getElementById('reanalyzeCard').classList.add('hidden')"
+            class="text-gray-400 hover:text-gray-600 text-sm"
+          >
+            ✕
+          </button>
+        </div>
+        <div id="reanalyzeContent" class="p-5 text-sm"></div>
+      </div>
+    </div>
+    <!-- /right col -->
+  </div>
+  <!-- /grid -->
+</div>
+<!-- /container -->
+
+<script>
+  const CSRF_TOKEN = "{{ csrf_token }}";
+  const DS_STORAGE_KEY = "deepseek_result_{{ prediction.id }}";
+
+  // Re-analyze inline with full rich output
+  async function reanalyzeEmail(predictionId, btn) {
+    const card = document.getElementById("reanalyzeCard");
+    const content = document.getElementById("reanalyzeContent");
+    card.classList.remove("hidden");
+    content.innerHTML = `<div class="flex items-center gap-2 py-4 justify-center">
+      <svg class="animate-spin w-5 h-5 text-purple-500" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+      </svg>
+      <span class="text-gray-500">Running DeepSeek — this may take 5-15 seconds…</span>
+    </div>`;
+    btn.disabled = true;
+    card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+    try {
+      const res = await fetch(`/api/reanalyze-email/${predictionId}/`, {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": CSRF_TOKEN,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+      const data = await res.json();
+      if (data.success) {
+        // Cache in sessionStorage
+        try {
+          sessionStorage.setItem(DS_STORAGE_KEY, JSON.stringify(data.analysis));
+        } catch (e) {}
+
+        // Update the embedded iframe if it exists
+        const htmlContent = data.analysis?.report_generation?.html_content;
+        const iframe = document.getElementById("deepseek-report-frame");
+        if (htmlContent && iframe) {
+          iframe.srcdoc = htmlContent;
+          iframe.closest(".mt-8").scrollIntoView({ behavior: "smooth" });
+        } else if (htmlContent) {
+          // If iframe didn't exist (no previous report), we might need to reload or show it
+          // For now, just render the summary result
+          renderResult(content, data.analysis);
+          // Optionally reload to show the new report section properly
+          setTimeout(() => window.location.reload(), 2000);
+        } else {
+          renderResult(content, data.analysis);
+        }
+      } else {
+        content.innerHTML = `<div class="text-red-500 text-sm py-2"><strong>Error:</strong> ${escHtml(data.error || "Analysis failed")}<br><span class="text-xs text-gray-400">Make sure DEEPSEEK_API_KEY is set in .env</span></div>`;
+      }
+    } catch (e) {
+      content.innerHTML = `<div class="text-red-500 text-sm py-2">Network error: ${escHtml(e.message)}</div>`;
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // Full rich result renderer (mirrors deepseek_analysis.html)
+  function renderResult(container, analysis) {
+    const a = analysis?.analysis || analysis || {};
+    const verdict = (
+      a.verdict ||
+      a.threat_level ||
+      a.combined_verdict ||
+      "UNKNOWN"
+    ).toUpperCase();
+    const riskScore = Math.round(
+      a.risk_scoring?.overall_risk_score ?? a.risk_score ?? a.confidence ?? 0,
+    );
+    const summary = a.analysis_summary || a.summary || "";
+    const ta = a.threat_assessment || {};
+    const techA = a.technical_analysis || {};
+    const contentA = a.content_analysis || {};
+    const linguisticA = a.linguistic_analysis || {};
+    const behavioralA = a.behavioral_analysis || {};
+    const riskScoring = a.risk_scoring || {};
+    const recs = a.recommendations || {};
+
+    const isBad =
+      verdict.includes("PHISHING") ||
+      verdict.includes("MALICIOUS") ||
+      verdict.includes("CRITICAL");
+    const isSus =
+      verdict.includes("SUSPICIOUS") ||
+      verdict.includes("HIGH") ||
+      verdict.includes("MEDIUM");
+    const color = isBad ? "red" : isSus ? "orange" : "green";
+    const emoji = isBad ? "🚨" : isSus ? "⚠️" : "✅";
+    const label = isBad ? "THREAT DETECTED" : isSus ? "SUSPICIOUS" : "SAFE";
+
+    const listHtml = (items, c = "gray") => {
+      if (!items?.length)
+        return `<span class="text-gray-400 text-xs italic">None identified</span>`;
+      return `<ul class="list-disc list-inside space-y-0.5 text-sm text-${c}-700 dark:text-${c}-300">${items
+        .slice(0, 6)
+        .map(
+          (i) =>
+            `<li>${escHtml(typeof i === "string" ? i : JSON.stringify(i))}</li>`,
+        )
+        .join("")}</ul>`;
+    };
+
+    const miniBar = (lbl, score) => {
+      if (score == null) return "";
+      const pct = Math.min(Math.round(score), 100);
+      const c =
+        pct >= 70
+          ? "red"
+          : pct >= 40
+            ? "orange"
+            : pct >= 20
+              ? "yellow"
+              : "green";
+      return `<div class="mb-2">
+        <div class="flex justify-between text-xs mb-0.5"><span class="text-gray-500">${escHtml(lbl)}</span><span class="font-bold text-${c}-600">${pct}</span></div>
+        <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-1.5"><div class="bg-${c}-500 h-1.5 rounded-full" style="width:${pct}%"></div></div>
+      </div>`;
+    };
+
+    container.innerHTML = `<div class="space-y-4">
+
+      <!-- Verdict banner -->
+      <div class="rounded-xl border-2 border-${color}-300 dark:border-${color}-700 bg-${color}-50 dark:bg-${color}-900/20 p-5 text-center">
+        <div class="text-3xl mb-1">${emoji}</div>
+        <div class="text-2xl font-black text-${color}-700 dark:text-${color}-300">${escHtml(verdict)}</div>
+        <div class="text-xs text-gray-500 mt-1">${escHtml(label)}
+          ${ta.primary_threat_category ? ` &middot; <strong>${escHtml(ta.primary_threat_category)}</strong>` : ""}
+          ${ta.confidence_score ? ` &middot; AI Confidence: <strong>${ta.confidence_score}%</strong>` : ""}
+        </div>
+        <div class="max-w-xs mx-auto mt-3">
+          <div class="flex justify-between text-xs text-gray-400 mb-1"><span>0 Safe</span><span>40 Sus</span><span>70 High</span><span>100</span></div>
+          <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-3">
+            <div class="bg-${color}-500 h-3 rounded-full relative" style="width:${Math.min(riskScore, 100)}%">
+              <span class="absolute right-1 top-0 text-white text-xs font-bold leading-3">${riskScore}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Why section -->
+      ${
+        summary
+          ? `<div class="bg-white dark:bg-gray-750 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+        <p class="text-xs font-bold text-gray-500 uppercase mb-1">🧠 Why DeepSeek Made This Decision</p>
+        <p class="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">${escHtml(summary)}</p>
+      </div>`
+          : ""
+      }
+
+      <!-- 4 analysis panels -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+          <p class="text-xs font-bold text-gray-500 mb-2">🔧 Technical</p>
+          ${
+            techA.sender_reputation
+              ? `<div class="flex gap-1 text-xs mb-1"><span class="text-gray-400">Sender:</span>
+            <span class="font-semibold ${techA.sender_reputation === "GOOD" ? "text-green-600" : techA.sender_reputation === "BAD" ? "text-red-600" : "text-orange-500"}">${escHtml(techA.sender_reputation)}</span></div>`
+              : ""
+          }
+          ${techA.domain_analysis ? `<p class="text-xs text-gray-500 mb-1 leading-relaxed">${escHtml(techA.domain_analysis).substring(0, 150)}${techA.domain_analysis.length > 150 ? "&hellip;" : ""}</p>` : ""}
+          ${techA.header_anomalies?.length ? `<p class="text-xs font-semibold text-orange-500 mb-1">Anomalies:</p>${listHtml(techA.header_anomalies, "orange")}` : ""}
+          ${!techA.sender_reputation && !techA.domain_analysis && !techA.header_anomalies?.length ? "<span class='text-gray-400 text-xs italic'>No technical issues found</span>" : ""}
+        </div>
+
+        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+          <p class="text-xs font-bold text-gray-500 mb-2">📝 Content</p>
+          ${contentA.content_risk_score != null ? `<div class="text-xs text-gray-400 mb-1">Risk: <strong class="${contentA.content_risk_score >= 70 ? "text-red-500" : contentA.content_risk_score >= 40 ? "text-orange-500" : "text-green-500"}">${contentA.content_risk_score}/100</strong></div>` : ""}
+          ${contentA.social_engineering_tactics?.length ? `<p class="text-xs font-semibold text-gray-500 mb-1">Social Engineering:</p>${listHtml(contentA.social_engineering_tactics)}` : ""}
+          ${contentA.urgency_indicators?.length ? `<p class="text-xs font-semibold text-orange-500 mt-1 mb-1">Urgency:</p>${listHtml(contentA.urgency_indicators, "orange")}` : ""}
+          ${!contentA.social_engineering_tactics?.length && !contentA.urgency_indicators?.length ? "<span class='text-gray-400 text-xs italic'>No manipulation tactics found</span>" : ""}
+        </div>
+
+        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+          <p class="text-xs font-bold text-gray-500 mb-2">✍️ Language &amp; Tone</p>
+          ${linguisticA.tone_analysis ? `<p class="text-xs text-gray-500 leading-relaxed mb-1">${escHtml(linguisticA.tone_analysis).substring(0, 150)}${linguisticA.tone_analysis.length > 150 ? "&hellip;" : ""}</p>` : ""}
+          ${
+            linguisticA.professionalism_score != null
+              ? `<div class="flex items-center gap-2 text-xs">
+            <span class="text-gray-400">Professionalism:</span>
+            <div class="flex-1 bg-gray-200 dark:bg-gray-600 rounded-full h-1.5"><div class="bg-blue-500 h-1.5 rounded-full" style="width:${linguisticA.professionalism_score}%"></div></div>
+            <span class="font-bold">${linguisticA.professionalism_score}%</span></div>`
+              : ""
+          }
+          ${!linguisticA.tone_analysis && linguisticA.professionalism_score == null ? "<span class='text-gray-400 text-xs italic'>No language issues found</span>" : ""}
+        </div>
+
+        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+          <p class="text-xs font-bold text-gray-500 mb-2">🎯 Behavioral</p>
+          ${behavioralA.call_to_action_analysis ? `<p class="text-xs text-gray-500 mb-1 leading-relaxed"><strong>CTA:</strong> ${escHtml(behavioralA.call_to_action_analysis).substring(0, 120)}${behavioralA.call_to_action_analysis.length > 120 ? "&hellip;" : ""}</p>` : ""}
+          ${behavioralA.financial_indicators?.length ? `<p class="text-xs font-semibold text-red-500 mb-1">Financial:</p>${listHtml(behavioralA.financial_indicators, "red")}` : ""}
+          ${!behavioralA.call_to_action_analysis && !behavioralA.financial_indicators?.length ? "<span class='text-gray-400 text-xs italic'>No suspicious behavior</span>" : ""}
+        </div>
+      </div>
+
+      <!-- Risk breakdown -->
+      ${
+        riskScoring.technical_risk != null || riskScoring.content_risk != null
+          ? `<div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+        <p class="text-xs font-bold text-gray-500 mb-2">📊 Risk Breakdown
+          <span class="float-right font-black text-${color}-600">${riskScore}/100</span></p>
+        ${miniBar("Technical", riskScoring.technical_risk)}
+        ${miniBar("Content", riskScoring.content_risk)}
+        ${miniBar("Behavioral", riskScoring.behavioral_risk)}
+      </div>`
+          : ""
+      }
+
+      <!-- Recommendations -->
+      ${
+        recs.immediate_actions?.length
+          ? `<div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-3">
+        <p class="text-xs font-bold text-blue-600 mb-2">✅ Recommended Actions</p>
+        ${listHtml(recs.immediate_actions, "blue")}
+        ${recs.user_education?.length ? `<p class="text-xs font-bold text-gray-500 mt-2 mb-1">📚 Also:</p>${listHtml(recs.user_education)}` : ""}
+      </div>`
+          : ""
+      }
+
+      <!-- View full analysis link -->
+      <div class="text-center pt-2">
+        <a href="/prediction/${analysis?.prediction_id || "{{ prediction.id }}"}/deepseek/"
+           class="inline-flex items-center gap-1 text-sm text-purple-600 hover:text-purple-800 font-semibold">
+          View Full Analysis Page →
+        </a>
+        <p class="text-xs text-gray-400 mt-0.5">Analysis is cached — no re-run needed</p>
+      </div>
+    </div>`;
+  }
+
+  // Delete function
+  function deletePrediction(predictionId) {
+    if (!confirm("Delete this prediction? This cannot be undone.")) return;
+    fetch(`/predictions/${predictionId}/delete/`, {
+      method: "POST",
+      headers: {
+        "X-CSRFToken": CSRF_TOKEN,
+        "Content-Type": "application/json",
+      },
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success) window.location.href = "{% url 'email_dashboard' %}";
+        else alert("Error: " + (data.error || "Delete failed"));
+      });
+  }
+
+  function escHtml(s) {
+    if (s == null) return "";
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+</script>
+{% endblock %}

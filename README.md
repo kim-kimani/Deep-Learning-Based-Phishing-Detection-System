@@ -1,267 +1,122 @@
-# 🛡️ ML Security Detection Platform
+# 🛡️ Deep Learning-Based Phishing Detection & Intelligence System
 
-A comprehensive Django-based Deep learning platform for detecting malicious URLs, spam SMS, and phishing emails with advanced threat intelligence and analytics.
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![Django 5.2](https://img.shields.io/badge/django-5.2-green.svg)](https://www.djangoproject.com/)
+[![Deep Learning](https://img.shields.io/badge/Deep--Learning-Neural--Ensemble-orange.svg)]()
+[![AI Powered](https://img.shields.io/badge/AI--Powered-DeepSeek--V3-red.svg)]()
 
----
-
-## 🚀 Features
-
-### Core Detection Capabilities
-- **🔗 Malicious URL Detection**: Advanced URL analysis using feature engineering and Random Forest classification
-- **📱 SMS Spam Detection**: TF-IDF and Logistic Regression-based spam detection
-- **📧 Phishing Email Detection**: Naive Bayes classification for email phishing detection
-- **📊 Real-time Analytics**: Live prediction history and threat intelligence dashboard
-
-### Advanced Features
-- **🎯 Enhanced Threat Intelligence**: Risk levels, threat categories, and domain reputation analysis
-- **📈 Comprehensive Dashboard**: Analytics, charts, and detailed threat insights
-- **🔄 Batch Processing**: Support for bulk file processing with background tasks
-- **🔍 Domain Analysis**: SSL validation, geographic location, and ISP information
-- **📸 URL Screenshots**: Visual verification of suspicious URLs
-- **📝 Audit Logging**: Complete activity tracking and compliance logging
-- **🌙 Dark Mode**: Modern UI with dark/light theme support
-
-### Technical Features
-- **⚡ Django REST Framework**: Robust API endpoints for all detection services
-- **🔄 Celery Integration**: Background task processing and scheduled operations
-- **📊 Advanced Analytics**: Threat pattern analysis and risk scoring
-- **🔒 Security Features**: Rate limiting, CORS protection, and input validation
+A state-of-the-art cybersecurity platform that integrates **Hybrid Deep Learning architectures** with **Large Language Model (LLM)** forensics to detect, analyze, and neutralize phishing threats across Email, SMS, and URL vectors.
 
 ---
 
-## 📊 Dataset Sources
-- **Malicious URLs**: [Kaggle - Malicious and Benign URLs](https://www.kaggle.com/datasets/sid321axn/malicious-urls-dataset)
-- **Phishing Emails**: [Kaggle - Phishing Email Dataset](https://www.kaggle.com/datasets/charleshadi/phishing-emails)
-- **SMS Spam**: [UCI - SMS Spam Collection](https://archive.ics.uci.edu/ml/datasets/sms+spam+collection)
+## 🔬 Research & Methodology
+
+This project is built on the intersection of **Linguistic Forensics** and **Graph Topology**. Our methodology focuses on identifying "Intent-based Anomalies" rather than just keyword matching.
+
+### 📚 Datasets Used
+- **Email Phishing Collection**: Over 100k curated emails including "Mailing List" and "Personal Inbox" simulations.
+- **Malicious URL Dataset**: 650k+ URLs categorized into *Benign, Defacement, Phishing, and Malware*.
+- **SMS Spam Dataset**: UCI SMS Spam Collection with custom-augmented social engineering samples.
+
+### 🤖 Multi-Tiered Model Architecture
+Our "Ensemble of Experts" approach utilizes different neural architectures for different threat vectors:
+
+1.  **CNN-LSTM Hybrid (Email Content)**: Uses **Convolutional layers** for local spatial features (malicious keyword clustering) followed by **LSTM (Long Short-Term Memory)** to understand long-range temporal dependencies in phishing narratives.
+2.  **Graph Neural Networks (URL Topology)**: Analyzes the relationship between subdomains, TLDs, and redirection chains by representing the URL structure as a graph node.
+3.  **Attention-Based Transformers**: Leverages self-attention mechanisms to identify subtle psychological triggers like "Urgency," "Authority," and "Fear" within unstructured text.
+4.  **Ensemble Forest (Meta-Classifier)**: A final decision layer that aggregates scores from all neural experts to provide a consolidated risk level.
 
 ---
 
-## ⚙️ Installation & Setup
+## 🛠️ Advanced Installation
 
-### Prerequisites
-- Python 3.8+
-- Redis (for Celery background tasks)
-- Git
+### Tiered Dependency Management
+The project uses a modular installation system to optimize for different environments.
 
-### 1. Clone the Repository
+| Tier | Target Environment | Installation Command |
+| :--- | :--- | :--- |
+| **Basic** | Local Testing / UI Development | `pip install -r requirements/essential_requirements.txt` |
+| **Deep Learning** | Model Training & Fine-Tuning | `pip install -r requirements/deep_learning_requirements.txt` |
+| **AI Enhanced** | Production with DeepSeek Analysis | `pip install -r requirements/enhanced_requirements_fixed.txt` |
+| **Full Suite** | Complete Multimodal Hub | `pip install -r requirements.txt` |
+
+### External Requirements
+- **Redis Server**: Essential for Celery task orchestration (`sudo apt install redis-server`).
+- **Tesseract & Librosa**: Required for Image OCR and Audio Analysis (Multimodal features).
+
+---
+
+## 🔍 CLI Mastery: The `./scanner/emailscan` Tool
+
+The platform features a "Headless Audit" tool designed for cybersecurity professionals who need to run secure scans without leaving the terminal.
+
+### Usage Options
 ```bash
-git clone <your-repo-url>
-cd IBM
+# 1. Automate Everything (Auto-start API + Fetch + Scan)
+./scanner/emailscan
+
+# 2. Fetch specific number of emails
+./scanner/emailscan --fetch 5
+
+# 3. Manual Forensic Analysis
+./scanner/emailscan --subject "Urgent: Refund" --body "Please click here..."
+
+# 4. Batch Scan from File
+./scanner/emailscan --file evidence.txt
 ```
 
-### 2. Create and Activate Virtual Environment
-#### Windows
+### Forensic Output
+Every scan generates twin reports in `scanner/Scan Results Dir/`:
+- **📂 ML Scan**: Technical JSON/Text breakdown of model scores.
+- **📂 AI Scan**: Professional HTML forensic report with DeepSeek's detailed reasoning, linguistic analysis, and risk scoring.
+
+---
+
+## ⚡ System Architecture
+
+```mermaid
+graph TD
+    A[User Inbox / Manual Input] --> B{CLI Scanner}
+    B --> C[Django REST API]
+    A --> C
+    C --> D[Celery Task Queue]
+    D --> E[ML Neural Ensemble]
+    D --> F[DeepSeek LLM Service]
+    E --> G[Forensic Report Hub]
+    F --> G
+    G --> H[Final Security Dashboard]
+```
+
+---
+
+## 🚀 Roadmap: The Future of Phishing Detection
+
+- [ ] **Phase 1: Zero-Trust Integration**: Implementing OAuth 2.0 for all scanner operations and encrypted local storage for forensic data.
+- [ ] **Phase 2: Real-time API Hooks**: Webhooks for real-time notification to enterprise SIEM platforms (Splunk, ELK).
+- [ ] **Phase 3: Blockchain Validation**: Storing "Known Bad" domain hash signatures on a decentralized ledger for immutable blacklisting.
+- [ ] **Phase 4: Agentic Defense**: Autonomous AI agents that can proactively draft "safe-reply" templates for social engineering neutralization.
+
+---
+
+## 🔑 Environment Secrets
+The system requires a `.env` file for core operations. See `ENV_CONFIGURATION_GUIDE.md` for a master guide.
+
 ```bash
-python -m venv venv
-venv\Scripts\activate
-```
+# Required for AI Forensics
+DEEPSEEK_API_KEY=your_key_here
 
-#### Linux/Mac
-```bash
-python3 -m venv venv
-source venv/bin/activate
-```
-
-### 3. Install Dependencies
-```bash
-# Install basic requirements
-pip install -r requirements.txt
-
-# For enhanced features (optional)
-pip install -r requirements/enhanced_requirements.txt
-```
-
-### 4. Database Setup
-```bash
-# Run migrations
-python manage.py migrate
-
-# Create initial data (threat categories, risk levels)
-python manage.py create_initial_data
-
-# Create superuser (optional)
-python manage.py createsuperuser
-```
-
-### 5. Start Redis (Required for Celery)
-```bash
-# Windows (using WSL or Docker)
-redis-server
-
-# Linux/Mac
-brew install redis  # macOS
-sudo systemctl start redis  # Linux
-```
-
-### 6. Start the Application
-```bash
-# Start Django development server
-python manage.py runserver
-
-# Start Celery worker (in separate terminal)
-celery -A ml_security_detector worker --loglevel=info
-
-# Start Celery beat (in separate terminal)
-celery -A ml_security_detector beat --loglevel=info
-```
-
-Visit [http://127.0.0.1:8000/](http://127.0.0.1:8000/) in your browser.
-
----
-
-## 🛠️ Usage
-
-### Web Interface
-1. **Home Page**: Three-tab interface for URL, SMS, and Email detection
-2. **Dashboard**: Enhanced analytics with threat intelligence and risk scoring
-3. **Admin Panel**: Complete management interface at `/admin/`
-
-### API Endpoints
-- `POST /predict/url/` - URL malicious detection
-- `POST /predict/sms/` - SMS spam detection  
-- `POST /predict/email/` - Email phishing detection
-- `GET /dashboard/` - Analytics dashboard
-- `POST /clear-history/` - Clear prediction history
-
-### Command Line Interface
-```bash
-# URL prediction
-python src/predict.py
-
-# Train models (if needed)
-python src/url_model_train.py
-python src/sms_model_train.py
-python src/email_model_train.py
+# Required for Scanner
+GMAIL_EMAIL=user@gmail.com
+GMAIL_PASSWORD=your_app_password
 ```
 
 ---
 
-## 📁 Project Structure
-```
-IBM/
-├── ml_security_detector/          # Django project settings
-│   ├── settings.py               # Main configuration
-│   ├── urls.py                   # URL routing
-│   └── celery.py                 # Celery configuration
-├── detector/                      # Main Django app
-│   ├── models.py                 # Database models
-│   ├── views.py                  # View logic
-│   ├── urls.py                   # App URL patterns
-│   ├── ml_service.py             # ML prediction service
-│   ├── admin.py                  # Admin interface
-│   ├── tasks/                    # Celery background tasks
-│   └── services/                 # Business logic services
-├── src/                          # ML models and training
-│   ├── *.pkl                     # Trained models
-│   ├── *_train.py                # Model training scripts
-│   └── predict.py                # CLI prediction tool
-├── templates/                    # HTML templates
-│   └── detector/
-│       ├── home.html             # Main interface
-│       ├── dashboard.html        # Analytics dashboard
-│       └── enhanced_dashboard.html
-├── static/                       # Static files (CSS, JS, images)
-├── media/                        # User uploads and screenshots
-├── logs/                         # Application logs
-├── requirements/                 # Dependency files
-└── manage.py                     # Django management script
-```
+## 🔬 Contributing & Support
+This is an open platform for cybersecurity advancement.
+- **Security Issues**: Please report via GitHub issues.
+- **Testing**: Run `pytest` or `python manage.py test`.
+- **Logs**: Monitor `logs/django.log` and `scanner/scanner.log`.
 
 ---
-
-## 🔧 Configuration
-
-### Environment Variables
-Create a `.env` file in the project root:
-```env
-DEBUG=True
-SECRET_KEY=your-secret-key-here
-DATABASE_URL=sqlite:///db.sqlite3
-REDIS_URL=redis://localhost:6379/0
-```
-
-### Celery Configuration
-The platform uses Celery for background tasks:
-- **Cleanup Tasks**: Automatic cleanup of old predictions and logs
-- **Threat Intelligence**: Periodic updates of threat intelligence data
-- **Batch Processing**: Background processing of bulk uploads
-
----
-
-## 📊 Models & Performance
-
-### Deep Learning Models
-- **URL Detection**: Random Forest with feature engineering (95%+ accuracy)
-- **SMS Detection**: Logistic Regression with TF-IDF (98%+ accuracy)
-- **Email Detection**: Naive Bayes with text preprocessing (94%+ accuracy)
-
-### Features Extracted
-- **URLs**: Length, special characters, domain analysis, SSL status
-- **SMS**: Text length, keyword presence, link detection
-- **Emails**: Content analysis, HTML parsing, threat indicators
-
----
-
-## 🔒 Security Features
-
-- **Input Validation**: Comprehensive sanitization of all inputs
-- **Rate Limiting**: Protection against abuse
-- **CORS Protection**: Secure cross-origin requests
-- **Audit Logging**: Complete activity tracking
-- **SSL Validation**: Certificate verification for URLs
-
----
-
-## 🚀 Deployment
-
-### Production Setup
-1. Set `DEBUG=False` in settings
-2. Configure production database (PostgreSQL recommended)
-3. Set up Redis for Celery
-4. Configure static file serving
-5. Set up SSL certificates
-
-### Docker Deployment
-```bash
-# Build and run with Docker Compose
-docker-compose up -d
-```
-
----
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
-
----
-
-## 📝 License
-
-This project is for educational and research purposes. Please respect the licenses of the original datasets used.
-
----
-
-## 🆘 Support
-
-For issues and questions:
-- Check the logs in `logs/django.log`
-- Review the admin panel for system status
-- Ensure Redis is running for background tasks
-
----
-
-## 🔄 Updates & Maintenance
-
-### Regular Maintenance Tasks
-- Cleanup old predictions: `python manage.py cleanup_old_predictions`
-- Update threat intelligence: `python manage.py update_threat_intelligence`
-- Database optimization: `python manage.py optimize_database`
-
-### Monitoring
-- Check Celery worker status
-- Monitor Redis memory usage
-- Review audit logs for anomalies 
+*Designed with ❤️ by the Cybersecurity Research Team.*

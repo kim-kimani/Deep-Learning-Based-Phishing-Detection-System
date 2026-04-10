@@ -1,0 +1,799 @@
+{% extends 'detector/base.html' %} {% load static %} {% block title %}📧 Email
+Security Dashboard — ML Security Platform{% endblock %} {% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+  <!-- ═══════════════════════════════════════════════════════════════
+       TOP HEADER  ─  Title + Action Buttons
+  ═══════════════════════════════════════════════════════════════ -->
+  <div
+    class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700"
+  >
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+      <div
+        class="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+      >
+        <div>
+          <h1
+            class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2"
+          >
+            📧 Email Security Dashboard
+          </h1>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Email-only phishing & spam detection · {{ total_emails }} emails
+            analysed
+          </p>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-wrap gap-3">
+          <button
+            id="fetchEmailsBtn"
+            onclick="runScript('fetch')"
+            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow transition-all"
+          >
+            <svg
+              class="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+              />
+            </svg>
+            📥 Fetch New Emails
+          </button>
+
+          <button
+            id="deepseekBtn"
+            onclick="runScript('deepseek')"
+            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-semibold shadow transition-all"
+          >
+            <svg
+              class="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+              />
+            </svg>
+            🤖 Analyze with DeepSeek AI
+          </button>
+
+          <a
+            href="{% url 'enhanced_predictions_dashboard' %}"
+            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-semibold shadow transition-all"
+          >
+            📊 All Predictions
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       LIVE LOG PANEL  (hidden until a script is launched)
+  ═══════════════════════════════════════════════════════════════ -->
+  <div id="logPanel" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+    <div
+      class="bg-gray-900 dark:bg-black rounded-xl border border-gray-700 shadow-xl"
+    >
+      <div
+        class="flex items-center justify-between px-4 py-2 border-b border-gray-700"
+      >
+        <div class="flex items-center gap-2">
+          <span class="w-3 h-3 rounded-full bg-red-500"></span>
+          <span class="w-3 h-3 rounded-full bg-yellow-500"></span>
+          <span class="w-3 h-3 rounded-full bg-green-500"></span>
+          <span id="logTitle" class="text-gray-300 text-sm font-mono ml-2"
+            >Terminal Output</span
+          >
+        </div>
+        <div class="flex items-center gap-3">
+          <span
+            id="logStatus"
+            class="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-700 text-gray-300"
+            >Idle</span
+          >
+          <button
+            onclick="
+              document.getElementById('logPanel').classList.add('hidden')
+            "
+            class="text-gray-500 hover:text-white text-xs"
+          >
+            ✕ Close
+          </button>
+        </div>
+      </div>
+      <div
+        id="logOutput"
+        class="font-mono text-xs text-green-400 p-4 max-h-64 overflow-y-auto leading-relaxed space-y-0.5"
+      >
+        <span class="text-gray-500">Waiting for output…</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       STATS CARDS
+  ═══════════════════════════════════════════════════════════════ -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div
+        class="bg-white dark:bg-gray-800 rounded-xl shadow p-5 flex items-center gap-4"
+      >
+        <div class="p-3 rounded-full bg-blue-100 dark:bg-blue-900 text-2xl">
+          📧
+        </div>
+        <div>
+          <p
+            class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide"
+          >
+            Total Emails
+          </p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white">
+            {{ total_emails }}
+          </p>
+        </div>
+      </div>
+
+      <div
+        class="bg-white dark:bg-gray-800 rounded-xl shadow p-5 flex items-center gap-4"
+      >
+        <div class="p-3 rounded-full bg-red-100 dark:bg-red-900 text-2xl">
+          ⚠️
+        </div>
+        <div>
+          <p
+            class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide"
+          >
+            Threats Detected
+          </p>
+          <p class="text-2xl font-bold text-red-600 dark:text-red-400">
+            {{ phishing_count }}
+          </p>
+        </div>
+      </div>
+
+      <div
+        class="bg-white dark:bg-gray-800 rounded-xl shadow p-5 flex items-center gap-4"
+      >
+        <div class="p-3 rounded-full bg-green-100 dark:bg-green-900 text-2xl">
+          ✅
+        </div>
+        <div>
+          <p
+            class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide"
+          >
+            Safe Emails
+          </p>
+          <p class="text-2xl font-bold text-green-600 dark:text-green-400">
+            {{ safe_count }}
+          </p>
+        </div>
+      </div>
+
+      <div
+        class="bg-white dark:bg-gray-800 rounded-xl shadow p-5 flex items-center gap-4"
+      >
+        <div class="p-3 rounded-full bg-purple-100 dark:bg-purple-900 text-2xl">
+          🎯
+        </div>
+        <div>
+          <p
+            class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide"
+          >
+            Detection Rate
+          </p>
+          <p class="text-2xl font-bold text-purple-600 dark:text-purple-400">
+            {{ detection_rate }}%
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         FILTER BAR
+    ═══════════════════════════════════════════════════════════════ -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow mb-6 p-4">
+      <form method="get" class="flex flex-col sm:flex-row gap-3 items-end">
+        <div class="flex-1">
+          <label
+            class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1"
+            >Search</label
+          >
+          <input
+            type="text"
+            name="search"
+            value="{{ search_query }}"
+            placeholder="Search subject, sender, or content…"
+            class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+          />
+        </div>
+        <div>
+          <label
+            class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1"
+            >Verdict</label
+          >
+          <select
+            name="verdict"
+            class="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+          >
+            <option
+              value="all"
+              {%
+              if
+              verdict_filter=""
+              ="all"
+              %}selected{%
+              endif
+              %}
+            >
+              All
+            </option>
+            <option
+              value="PHISHING"
+              {%
+              if
+              verdict_filter=""
+              ="PHISHING"
+              %}selected{%
+              endif
+              %}
+            >
+              Phishing
+            </option>
+            <option
+              value="SPAM"
+              {%
+              if
+              verdict_filter=""
+              ="SPAM"
+              %}selected{%
+              endif
+              %}
+            >
+              Spam
+            </option>
+            <option
+              value="NOT PHISHING"
+              {%
+              if
+              verdict_filter=""
+              ="NOT PHISHING"
+              %}selected{%
+              endif
+              %}
+            >
+              Safe
+            </option>
+            <option
+              value="SUSPICIOUS"
+              {%
+              if
+              verdict_filter=""
+              ="SUSPICIOUS"
+              %}selected{%
+              endif
+              %}
+            >
+              Suspicious
+            </option>
+          </select>
+        </div>
+        <div class="flex gap-2">
+          <button
+            type="submit"
+            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg font-medium transition-colors"
+          >
+            Apply
+          </button>
+          <a
+            href="{% url 'email_dashboard' %}"
+            class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded-lg font-medium transition-colors"
+          >
+            Clear
+          </a>
+        </div>
+        <div
+          class="text-sm text-gray-500 dark:text-gray-400 self-center whitespace-nowrap"
+        >
+          {{ page_obj.paginator.count }} result{{ page_obj.paginator.count|pluralize }}
+        </div>
+      </form>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         EMAIL CARDS GRID
+    ═══════════════════════════════════════════════════════════════ -->
+    {% if email_cards %}
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 mb-6">
+      {% for card in email_cards %}
+      <div
+        class="bg-white dark:bg-gray-800 rounded-xl shadow hover:shadow-lg transition-shadow duration-200 flex flex-col"
+      >
+        <!-- Card Header → label + risk % -->
+        <div class="px-5 pt-5 pb-3 flex items-start justify-between gap-2">
+          <div class="flex flex-col gap-1.5">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span
+                class="px-2 py-0.5 text-xs font-bold rounded-full {% if card.predicted_label == 'PHISHING' %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 {% elif card.predicted_label == 'SPAM' or card.predicted_label == 'MALICIOUS' %}bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200 {% elif card.predicted_label == 'SUSPICIOUS' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 {% else %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200{% endif %}"
+              >
+                {% if card.predicted_label == 'PHISHING' %}🔴{% elif card.is_malicious %}🟠{% else %}🟢{% endif %} {{ card.predicted_label }}
+              </span>
+              <span class="text-xs text-gray-400 dark:text-gray-500">
+                {{ card.timestamp|date:"M d, Y H:i" }}
+              </span>
+            </div>
+            <p
+              class="text-sm font-semibold text-gray-900 dark:text-white leading-snug"
+            >
+              {% if card.subject %}{{ card.subject|truncatechars:70 }}{% else %}<em class="text-gray-400">No Subject</em>{% endif %}
+            </p>
+            {% if card.sender %}
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+              From: {{ card.sender|truncatechars:50 }}
+            </p>
+            {% endif %}
+          </div>
+          <!-- Risk Score Circle -->
+          <div class="flex-shrink-0 text-center">
+            <div
+              class="w-14 h-14 rounded-full border-4 flex items-center justify-center font-bold text-sm {% if card.risk_score >= 70 %}border-red-500 text-red-600 dark:text-red-400 {% elif card.risk_score >= 40 %}border-orange-400 text-orange-600 dark:text-orange-400 {% elif card.risk_score >= 20 %}border-yellow-400 text-yellow-600 dark:text-yellow-400 {% else %}border-green-500 text-green-600 dark:text-green-400{% endif %}"
+            >
+              {{ card.risk_score|floatformat:0 }}%
+            </div>
+            <p class="text-xs text-gray-400 mt-1">Risk</p>
+          </div>
+        </div>
+
+        <!-- Confidence bar -->
+        <div class="px-5 pb-3">
+          <div
+            class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1"
+          >
+            <span>ML Confidence</span>
+            <span class="font-semibold">{{ card.confidence_percentage }}</span>
+          </div>
+          <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+            <div
+              class="{{ card.bar_color }} h-2 rounded-full transition-all duration-500"
+              style="width: {{ card.confidence_score }}%"
+            ></div>
+          </div>
+        </div>
+
+        <!-- Body preview -->
+        <div class="px-5 pb-3 flex-1">
+          <p class="text-xs text-gray-600 dark:text-gray-300 line-clamp-3">
+            {{ card.body_preview|default:"(no body content)" }}
+          </p>
+          {% if card.full_body|length > 200 %}
+          <button
+            onclick="toggleBody('body-{{ forloop.counter }}')"
+            class="text-xs text-blue-500 hover:underline mt-1"
+          >
+            Show full email ↓
+          </button>
+          <pre
+            id="body-{{ forloop.counter }}"
+            class="hidden mt-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap max-h-60 overflow-y-auto font-mono"
+          >
+{{ card.full_body }}</pre
+          >
+          {% endif %}
+        </div>
+
+        <!-- Card Actions -->
+        <div
+          class="px-5 py-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between gap-2"
+        >
+          <div class="flex gap-2 flex-wrap">
+            <a
+              href="{% url 'prediction_detail' card.id %}"
+              class="px-3 py-1.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors font-medium"
+            >
+              🔍 Details
+            </a>
+            <a
+              href="{% url 'manual_analysis_page' card.id %}"
+              class="px-3 py-1.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors font-medium"
+            >
+              📋 Manual
+            </a>
+            <button
+              onclick="reanalyzeEmail('{{ card.id }}', this)"
+              class="px-3 py-1.5 text-xs bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-800 transition-colors font-medium"
+            >
+              🤖 Re-analyze
+            </button>
+          </div>
+          <a
+            href="{% url 'deepseek_analysis_page' card.id %}"
+            class="text-xs text-purple-500 hover:text-purple-700 dark:text-purple-400"
+          >
+            DeepSeek →
+          </a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="flex justify-center items-center gap-2 pb-8">
+      {% if page_obj.has_previous %}
+      <a
+        href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if verdict_filter != 'all' %}&verdict={{ verdict_filter }}{% endif %}"
+        class="px-3 py-1.5 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 text-sm"
+        >«</a
+      >
+      <a
+        href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if verdict_filter != 'all' %}&verdict={{ verdict_filter }}{% endif %}"
+        class="px-3 py-1.5 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 text-sm"
+        >Previous</a
+      >
+      {% endif %} {% for num in page_obj.paginator.page_range %} {% if page_obj.number == num %}
+      <span
+        class="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-sm font-bold"
+        >{{ num }}</span
+      >
+      {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+      <a
+        href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if verdict_filter != 'all' %}&verdict={{ verdict_filter }}{% endif %}"
+        class="px-3 py-1.5 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 text-sm"
+        >{{ num }}</a
+      >
+      {% endif %} {% endfor %} {% if page_obj.has_next %}
+      <a
+        href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if verdict_filter != 'all' %}&verdict={{ verdict_filter }}{% endif %}"
+        class="px-3 py-1.5 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 text-sm"
+        >Next</a
+      >
+      <a
+        href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if verdict_filter != 'all' %}&verdict={{ verdict_filter }}{% endif %}"
+        class="px-3 py-1.5 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 text-sm"
+        >»</a
+      >
+      {% endif %}
+    </div>
+    {% endif %} {% else %}
+    <!-- Empty State -->
+    <div
+      class="bg-white dark:bg-gray-800 rounded-xl shadow p-16 text-center mb-8"
+    >
+      <div class="text-6xl mb-4">📭</div>
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+        No Emails Analysed Yet
+      </h3>
+      <p class="text-gray-500 dark:text-gray-400 mb-6">
+        Click <strong>"📥 Fetch New Emails"</strong> to pull emails from Gmail
+        and run the detector,<br />
+        or <strong>"🤖 Analyze with DeepSeek AI"</strong> for AI-powered
+        analysis.
+      </p>
+      <button
+        onclick="runScript('fetch')"
+        class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold shadow transition-colors"
+      >
+        📥 Fetch New Emails
+      </button>
+    </div>
+    {% endif %}
+  </div>
+  <!-- /max-w-7xl -->
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     Re-analyze Result Modal
+═══════════════════════════════════════════════════════════════ -->
+<div
+  id="reanalyzeModal"
+  class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+>
+  <div
+    class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+  >
+    <div
+      class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center"
+    >
+      <h3 class="text-lg font-bold text-gray-900 dark:text-white">
+        🤖 DeepSeek Re-analysis Result
+      </h3>
+      <button
+        onclick="
+          document.getElementById('reanalyzeModal').classList.add('hidden')
+        "
+        class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl font-bold"
+      >
+        ✕
+      </button>
+    </div>
+    <div id="reanalyzeContent" class="p-6">
+      <div class="flex items-center justify-center py-8">
+        <svg
+          class="animate-spin w-8 h-8 text-purple-500"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            class="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            stroke-width="4"
+          />
+          <path
+            class="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+          />
+        </svg>
+        <span class="ml-3 text-gray-600 dark:text-gray-300"
+          >Running DeepSeek analysis…</span
+        >
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const CSRF_TOKEN = "{{ csrf_token }}";
+
+  // ─── Script launcher + log panel ───────────────────────────────────────────
+  let _pollTimer = null;
+
+  async function runScript(mode) {
+    const url =
+      mode === "deepseek"
+        ? "{% url 'analyze_emails_deepseek' %}"
+        : "{% url 'fetch_emails' %}";
+    const label =
+      mode === "deepseek"
+        ? "🤖 email_checker_with_deepseek_env.py"
+        : "📥 run_email_checker.py";
+
+    document.getElementById("logPanel").classList.remove("hidden");
+    document.getElementById("logTitle").textContent = label;
+    document.getElementById("logStatus").textContent = "Starting…";
+    document.getElementById("logStatus").className =
+      "text-xs font-semibold px-2 py-0.5 rounded-full bg-yellow-600 text-white";
+    document.getElementById("logOutput").innerHTML =
+      '<span class="text-gray-400">Launching script…</span>';
+
+    const btn = document.getElementById(
+      mode === "deepseek" ? "deepseekBtn" : "fetchEmailsBtn",
+    );
+    btn.disabled = true;
+    btn.textContent = "⏳ Running…";
+
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": CSRF_TOKEN,
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await res.json();
+      if (data.success) {
+        pollProcess(data.process_id, btn, mode);
+      } else {
+        showLogError("Failed to launch: " + (data.error || "Unknown error"));
+        resetBtn(btn, mode);
+      }
+    } catch (e) {
+      showLogError("Network error: " + e.message);
+      resetBtn(btn, mode);
+    }
+  }
+
+  function pollProcess(processId, btn, mode) {
+    if (_pollTimer) clearInterval(_pollTimer);
+    _pollTimer = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/process-status/${processId}/`);
+        const data = await res.json();
+        if (!data.success) return;
+
+        const logEl = document.getElementById("logOutput");
+        const lines = data.output_lines || [];
+        logEl.innerHTML = lines.length
+          ? lines.map((l) => `<div>${escHtml(l)}</div>`).join("")
+          : '<span class="text-gray-400">Running…</span>';
+        logEl.scrollTop = logEl.scrollHeight;
+
+        const statusEl = document.getElementById("logStatus");
+        const st = data.status || "running";
+        statusEl.textContent = st.charAt(0).toUpperCase() + st.slice(1);
+
+        if (st.startsWith("done")) {
+          statusEl.className =
+            "text-xs font-semibold px-2 py-0.5 rounded-full bg-green-600 text-white";
+          clearInterval(_pollTimer);
+          resetBtn(btn, mode);
+          // Refresh emails list after 1s
+          setTimeout(() => location.reload(), 1500);
+        } else if (st.startsWith("error")) {
+          statusEl.className =
+            "text-xs font-semibold px-2 py-0.5 rounded-full bg-red-600 text-white";
+          clearInterval(_pollTimer);
+          resetBtn(btn, mode);
+        } else {
+          statusEl.className =
+            "text-xs font-semibold px-2 py-0.5 rounded-full bg-yellow-600 text-white";
+        }
+      } catch (e) {
+        /* ignore poll errors */
+      }
+    }, 1500);
+  }
+
+  function showLogError(msg) {
+    document.getElementById("logOutput").innerHTML =
+      `<div class="text-red-400">${escHtml(msg)}</div>`;
+    document.getElementById("logStatus").textContent = "Error";
+    document.getElementById("logStatus").className =
+      "text-xs font-semibold px-2 py-0.5 rounded-full bg-red-600 text-white";
+  }
+
+  function resetBtn(btn, mode) {
+    btn.disabled = false;
+    btn.innerHTML =
+      mode === "deepseek"
+        ? '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg> 🤖 Analyze with DeepSeek AI'
+        : '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg> 📥 Fetch New Emails';
+  }
+
+  // ─── Re-analyze modal ─────────────────────────────────────────────────────
+  async function reanalyzeEmail(predictionId, btn) {
+    const modal = document.getElementById("reanalyzeModal");
+    const content = document.getElementById("reanalyzeContent");
+    modal.classList.remove("hidden");
+    content.innerHTML = `
+    <div class="flex items-center justify-center py-8">
+      <svg class="animate-spin w-8 h-8 text-purple-500" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+      </svg>
+      <span class="ml-3 text-gray-600 dark:text-gray-300">Running DeepSeek analysis…</span>
+    </div>`;
+
+    try {
+      const res = await fetch(`/api/reanalyze-email/${predictionId}/`, {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": CSRF_TOKEN,
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await res.json();
+      if (data.success) {
+        renderReanalyzeResult(content, data.analysis);
+      } else {
+        content.innerHTML = `<div class="text-center py-6">
+        <div class="text-4xl mb-2">⚠️</div>
+        <p class="text-red-600 dark:text-red-400 font-medium">${escHtml(data.error || "Analysis failed")}</p>
+        <p class="text-sm text-gray-500 mt-2">Make sure DEEPSEEK_API_KEY is set in .env and the Django server has network access.</p>
+      </div>`;
+      }
+    } catch (e) {
+      content.innerHTML = `<div class="text-center py-6">
+      <p class="text-red-600 dark:text-red-400">Network error: ${escHtml(e.message)}</p>
+    </div>`;
+    }
+  }
+
+  function renderReanalyzeResult(container, analysis) {
+    const a = analysis?.analysis || analysis || {};
+    const verdict = (a.verdict || a.threat_level || "UNKNOWN").toUpperCase();
+    const riskScore =
+      a.risk_scoring?.overall_risk_score ?? a.risk_score ?? a.confidence ?? 0;
+    const summary = a.analysis_summary || a.summary || "";
+    const findings =
+      a.key_findings || a.threat_assessment?.key_indicators || [];
+    const recommendations = a.recommendations || [];
+    const verdictColor =
+      verdict.includes("PHISHING") ||
+      verdict.includes("MALICIOUS") ||
+      verdict.includes("CRITICAL")
+        ? "red"
+        : verdict.includes("SUSPICIOUS")
+          ? "yellow"
+          : "green";
+
+    container.innerHTML = `
+    <div class="space-y-4">
+      <div class="text-center p-4 rounded-xl bg-${verdictColor}-50 dark:bg-${verdictColor}-900/20 border border-${verdictColor}-200 dark:border-${verdictColor}-800">
+        <div class="text-4xl font-black text-${verdictColor}-600 dark:text-${verdictColor}-400">${escHtml(verdict)}</div>
+        <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          Risk Score: <strong>${Math.round(riskScore)}/100</strong>
+        </div>
+        <div class="mt-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+          <div class="bg-${verdictColor}-500 h-2.5 rounded-full" style="width:${Math.min(riskScore, 100)}%"></div>
+        </div>
+      </div>
+
+      ${
+        summary
+          ? `<div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+        <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">Summary</h4>
+        <p class="text-sm text-gray-600 dark:text-gray-300">${escHtml(summary)}</p>
+      </div>`
+          : ""
+      }
+
+      ${
+        findings.length
+          ? `<div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+        <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">Key Findings</h4>
+        <ul class="list-disc list-inside text-sm text-gray-600 dark:text-gray-300 space-y-1">
+          ${findings
+            .slice(0, 8)
+            .map(
+              (f) =>
+                `<li>${escHtml(typeof f === "string" ? f : f.indicator || JSON.stringify(f))}</li>`,
+            )
+            .join("")}
+        </ul>
+      </div>`
+          : ""
+      }
+
+      ${
+        recommendations.length
+          ? `<div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+        <h4 class="text-sm font-semibold text-blue-700 dark:text-blue-300 mb-2">Recommendations</h4>
+        <ul class="list-disc list-inside text-sm text-blue-600 dark:text-blue-400 space-y-1">
+          ${recommendations
+            .slice(0, 5)
+            .map(
+              (r) =>
+                `<li>${escHtml(typeof r === "string" ? r : r.action || JSON.stringify(r))}</li>`,
+            )
+            .join("")}
+        </ul>
+      </div>`
+          : ""
+      }
+
+      <details class="bg-gray-50 dark:bg-gray-700 rounded-lg">
+        <summary class="px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg">
+          Show raw JSON
+        </summary>
+        <pre class="px-4 pb-4 text-xs text-gray-500 dark:text-gray-400 overflow-auto max-h-60">${escHtml(JSON.stringify(analysis, null, 2))}</pre>
+      </details>
+    </div>`;
+  }
+
+  // ─── Body expand/collapse ────────────────────────────────────────────────
+  function toggleBody(id) {
+    const el = document.getElementById(id);
+    if (el.classList.contains("hidden")) {
+      el.classList.remove("hidden");
+      el.previousElementSibling.textContent = "Hide ↑";
+    } else {
+      el.classList.add("hidden");
+      el.previousElementSibling.textContent = "Show full email ↓";
+    }
+  }
+
+  // ─── Utility ─────────────────────────────────────────────────────────────
+  function escHtml(str) {
+    if (str == null) return "";
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+</script>
+{% endblock %}
